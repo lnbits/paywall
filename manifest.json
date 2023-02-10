@@ -3,7 +3,7 @@
         {
             "id": "paywall",
             "organisation": "lnbits",
-            "repository": "paywall-extension"
+            "repository": "paywall"
         }
     ]
 }
