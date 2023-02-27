@@ -68,7 +68,8 @@
       <q-card-section>
         <code
           ><span class="text-green">POST</span>
-          /paywall/api/v1/paywalls/&lt;paywall_id&gt;/invoice</code
+          /paywall/api/v1/paywalls/invoice/{paywall_id}
+          </code
         >
         <h5 class="text-caption q-mt-sm q-mb-none">Body (application/json)</h5>
         <code>{"amount": &lt;integer&gt;}</code>
@@ -82,7 +83,7 @@
         <h5 class="text-caption q-mt-sm q-mb-none">Curl example</h5>
         <code
           >curl -X POST {{ request.base_url
-          }}paywall/api/v1/paywalls/&lt;paywall_id&gt;/invoice -d '{"amount":
+          }}paywall/api/v1/paywalls/invoice/{paywall_id} -d '{"amount":
           &lt;integer&gt;}' -H "Content-type: application/json"
         </code>
       </q-card-section>
@@ -98,7 +99,7 @@
       <q-card-section>
         <code
           ><span class="text-green">POST</span>
-          /paywall/api/v1/paywalls/&lt;paywall_id&gt;/check_invoice</code
+          /paywall/api/v1/paywalls/check_invoice/&lt;paywall_id&gt;/</code
         >
         <h5 class="text-caption q-mt-sm q-mb-none">Body (application/json)</h5>
         <code>{"payment_hash": &lt;string&gt;}</code>
@@ -113,7 +114,7 @@
         <h5 class="text-caption q-mt-sm q-mb-none">Curl example</h5>
         <code
           >curl -X POST {{ request.base_url
-          }}paywall/api/v1/paywalls/&lt;paywall_id&gt;/check_invoice -d
+          }}paywall/api/v1/paywalls/check_invoice/&lt;paywall_id&gt; -d
           '{"payment_hash": &lt;string&gt;}' -H "Content-type: application/json"
         </code>
       </q-card-section>
