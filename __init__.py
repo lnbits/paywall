@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from starlette.staticfiles import StaticFiles
+from fastapi.staticfiles import StaticFiles
 
 from lnbits.db import Database
 from lnbits.helpers import template_renderer

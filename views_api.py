@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
 from fastapi import Depends, Query
-from starlette.exceptions import HTTPException
+from fastapi.exceptions import HTTPException
 
 from lnbits.core.crud import get_user, get_wallet
 from lnbits.core.services import check_transaction_status, create_invoice
@@ -35,7 +35,7 @@ async def api_paywall_create(
 
 @paywall_ext.delete("/api/v1/paywalls/{paywall_id}")
 async def api_paywall_delete(
-    paywall_id, wallet: WalletTypeInfo = Depends(get_key_type)
+    paywall_id: str, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
     paywall = await get_paywall(paywall_id)
 
@@ -55,7 +55,7 @@ async def api_paywall_delete(
 
 @paywall_ext.post("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_invoice(
-    data: CreatePaywallInvoice, paywall_id: str = Query(None)
+    data: CreatePaywallInvoice, paywall_id: str
 ):
     paywall = await get_paywall(paywall_id)
     assert paywall
@@ -80,7 +80,7 @@ async def api_paywall_create_invoice(
 
 @paywall_ext.post("/api/v1/paywalls/check_invoice/{paywall_id}")
 async def api_paywal_check_invoice(
-    data: CheckPaywallInvoice, paywall_id: str = Query(None)
+    data: CheckPaywallInvoice, paywall_id: str
 ):
     paywall = await get_paywall(paywall_id)
     payment_hash = data.payment_hash
