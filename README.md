@@ -1,4 +1,5 @@
-# Paywall
+# Paywall - <small>[LNbits](https://github.com/lnbits/lnbits) extension</small>
+<small>For more about LNBits extension check [this tutorial](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)</small>
 
 ## Hide content behind a paywall, a user has to pay some amount to access your hidden content
 
