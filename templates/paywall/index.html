@@ -109,13 +109,7 @@
           label="Wallet *"
         >
         </q-select>
-        <q-input
-          filled
-          dense
-          v-model.trim="formDialog.data.url"
-          type="url"
-          label="Redirect URL *"
-        ></q-input>
+
         <q-input
           filled
           dense
@@ -124,50 +118,77 @@
           placeholder="LNbits paywall"
         ></q-input>
         <q-input
+        filled
+        dense
+        v-model.number="formDialog.data.amount"
+        type="number"
+        label="Amount (sat) *"
+        hint="This is the minimum amount users can pay/donate."
+      ></q-input>
+        <q-select
+        filled
+        dense
+        emit-value
+        v-model="formDialog.data.type"
+        :options="paywallTypeOptions"
+        label="Paywall Type"
+      >
+      </q-select>
+      <div v-if="formDialog.data.type.id == 'url'">
+          <q-input
           filled
           dense
-          autogrow
-          v-model.trim="formDialog.data.description"
-          label="Description"
+          v-model.trim="formDialog.data.url"
+          type="url"
+          label="URL *"
         ></q-input>
-        <q-input
-          filled
-          dense
-          v-model.number="formDialog.data.amount"
-          type="number"
-          label="Amount (sat) *"
-          hint="This is the minimum amount users can pay/donate."
-        ></q-input>
-        <q-list>
-          <q-item tag="label" class="rounded-borders">
-            <q-item-section avatar>
-              <q-checkbox
-                v-model="formDialog.data.remembers"
-                color="primary"
-              ></q-checkbox>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Remember payments</q-item-label>
-              <q-item-label caption
-                >A succesful payment will be registered in the browser's
-                storage, so the user doesn't need to pay again to access the
-                URL.</q-item-label
-              >
-            </q-item-section>
-          </q-item>
-        </q-list>
-        <div class="row q-mt-lg">
-          <q-btn
-            unelevated
-            color="primary"
-            :disable="formDialog.data.amount == null || formDialog.data.amount < 0 || formDialog.data.url == null || formDialog.data.memo == null"
-            type="submit"
-            >Create paywall</q-btn
-          >
-          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
-            >Cancel</q-btn
-          >
+      </div>
+      <div  v-else-if="formDialog.data.type.id == 'file'"></div>
+        <q-toggle
+        label="Advanced"
+        v-model="formDialog.showAdvanced"
+      ></q-toggle>
+      <div v-if="formDialog.showAdvanced">
+          <q-input
+            filled
+            dense
+            autogrow
+            v-model.trim="formDialog.data.description"
+            label="Description"
+          ></q-input>
+
+          <q-list>
+            <q-item tag="label" class="rounded-borders">
+              <q-item-section avatar>
+                <q-checkbox
+                  v-model="formDialog.data.remembers"
+                  color="primary"
+                ></q-checkbox>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Remember payments</q-item-label>
+                <q-item-label caption
+                  >A succesful payment will be registered in the browser's
+                  storage, so the user doesn't need to pay again to access the
+                  URL.</q-item-label
+                >
+              </q-item-section>
+            </q-item>
+          </q-list>
         </div>
+          <div class="row q-mt-lg">
+            <q-btn
+              unelevated
+              color="primary"
+              :disable="formDialog.data.amount == null || formDialog.data.amount < 0 || formDialog.data.url == null || formDialog.data.memo == null"
+              type="submit"
+              >Create paywall</q-btn
+            >
+            <q-btn v-close-popup flat color="grey" class="q-ml-auto"
+              >Cancel</q-btn
+            >
+          </div>
+
       </q-form>
     </q-card>
   </q-dialog>
@@ -224,10 +245,16 @@
         },
         formDialog: {
           show: false,
+          showAdvanced: false,
           data: {
-            remembers: false
+            remembers: false,
+            type: {id: 'url', label: 'Redirect URL'},
           }
-        }
+        },
+        paywallTypeOptions: [
+          {id: 'url', label: 'Redirect URL'},
+          {id: 'file', label: 'File Download'}
+        ],
       }
     },
     methods: {
@@ -268,7 +295,8 @@
             self.paywalls.push(mapPaywall(response.data))
             self.formDialog.show = false
             self.formDialog.data = {
-              remembers: false
+              remembers: false,
+              type: {id: 'url', label: 'Redirect URL'},
             }
           })
           .catch(function (error) {

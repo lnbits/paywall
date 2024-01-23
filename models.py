@@ -21,6 +21,21 @@ class CreatePaywallInvoice(BaseModel):
 class CheckPaywallInvoice(BaseModel):
     payment_hash: str = Query(...)
 
+class PaywallFileConfig(BaseModel):
+    url: str
+    headers: dict[str, str]
+    file_version: Optional[str]
+    expiration_time: Optional[int]
+    max_number_of_downloads: Optional[int]
+
+
+class PaywallConfig(BaseModel):
+    # possible types: 'url' and 'file'
+    type: Optional[str] = "url"
+    file_config: Optional[PaywallFileConfig]
+
+
+
 
 class Paywall(BaseModel):
     id: str
@@ -31,7 +46,7 @@ class Paywall(BaseModel):
     amount: int
     time: int
     remembers: bool
-    extras: Optional[dict]
+    extras: Optional[PaywallConfig] = PaywallConfig()
 
     @classmethod
     def from_row(cls, row: Row) -> "Paywall":
