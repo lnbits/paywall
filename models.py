@@ -25,8 +25,9 @@ class PaywallFileConfig(BaseModel):
     url: str
     headers: dict[str, str]
     file_version: Optional[str]
-    expiration_time: Optional[int]
-    max_number_of_downloads: Optional[int]
+    # todo: nice to have:
+    # expiration_time: Optional[int]
+    # max_number_of_downloads: Optional[int]
 
 
 class PaywallConfig(BaseModel):

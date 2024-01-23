@@ -143,10 +143,70 @@
           label="URL *"
         ></q-input>
       </div>
-      <div  v-else-if="formDialog.data.type.id == 'file'"></div>
+      <div  v-else-if="formDialog.data.type.id == 'file'">
+        <q-input
+          filled
+          dense
+          v-model.trim="formDialog.data.fileUrl"
+          type="url"
+          label="File URL *"
+          hint="This is the location of the file. The client will never have direct access to it."
+          class="q-mb-sm"
+        ></q-input>
+        <!-- <div  class="q-mb-sm">
+          <small class="">An optional `{version}` placeholder can be used in the URL. Example: 'https://api.github.com/repos/lnbits/paywall/zipball/{version}'</small>
+        </div> -->
+        <div class="row q-mb-sm">
+          <div class="col-1">
+            <q-btn icon="info" flat size="sm"
+            ></q-btn
+          >
+          </div>
+          <div class="col-11">
+            <small class="">An optional `{version}` placeholder can be used in the URL. Example: 'https://api.github.com/repos/lnbits/paywall/zipball/{version}'</small>
+          </div>
+
+        </div>
+      <div class="row q-ml-md q-mb-sm q-mt-sm">
+        <div class="col-12">
+          <div>
+          <q-btn icon="add" label="Add Http Header"  @click="addFileHttpHeader" size="sm" unelevated color="secondary" class="float-right"
+          ></q-btn
+        >
+        </div>
+      </div>
+
+      </div>
+        <div v-for="(header, index) in formDialog.data.headers" class="row q-mb-sm q-ml-md">
+          <div class="col-5">
+            <q-input
+            filled
+            dense
+            v-model.trim="header.key"
+            label="Key"
+          ></q-input>
+          </div>
+          <div class="col-5">
+            <q-input
+            filled
+            dense
+            v-model.trim="header.value"
+            label="Value"
+            class="q-pl-sm"
+          ></q-input>
+          </div>
+          <div class="col-2">
+            <q-btn @click="removeFileHttpHeader(index)" icon="clear" size="sm" unelevated color="primary" class="float-right q-mt-sm"
+              ></q-btn
+            >
+            </div>
+        </div>
+
+      </div>
         <q-toggle
         label="Advanced"
         v-model="formDialog.showAdvanced"
+        class="q-mt-md"
       ></q-toggle>
       <div v-if="formDialog.showAdvanced">
           <q-input
@@ -249,6 +309,7 @@
           data: {
             remembers: false,
             type: {id: 'url', label: 'Redirect URL'},
+            headers: []
           }
         },
         paywallTypeOptions: [
@@ -325,6 +386,15 @@
                 LNbits.utils.notifyApiError(error)
               })
           })
+      },
+      addFileHttpHeader: function(){
+        this.formDialog.data.headers.push({key: '', value:''})
+      },
+      removeFileHttpHeader: function(index){
+        if (index < this.formDialog.data.headers.length) {
+          this.formDialog.data.headers.splice(index, 1)
+        }
+
       },
       exportCSV: function () {
         LNbits.utils.exportCSV(this.paywallsTable.columns, this.paywalls)
