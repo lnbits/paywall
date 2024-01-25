@@ -1,3 +1,4 @@
+import json
 from typing import List, Optional, Union
 
 from lnbits.helpers import urlsafe_short_hash
@@ -10,8 +11,8 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     paywall_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO paywall.paywalls (id, wallet, url, memo, description, amount, remembers)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO paywall.paywalls (id, wallet, url, memo, description, amount, remembers, extras)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             paywall_id,
@@ -21,6 +22,7 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
             data.description,
             data.amount,
             int(data.remembers),
+            json.dumps(data.extras.dict()) if data.extras else None
         ),
     )
 

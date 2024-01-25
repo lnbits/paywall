@@ -6,25 +6,9 @@ from fastapi import Query
 from pydantic import BaseModel
 
 
-class CreatePaywall(BaseModel):
-    url: str = Query(...)
-    memo: str = Query(...)
-    description: str = Query(None)
-    amount: int = Query(..., ge=0)
-    remembers: bool = Query(...)
-
-
-class CreatePaywallInvoice(BaseModel):
-    amount: int = Query(..., ge=1)
-
-
-class CheckPaywallInvoice(BaseModel):
-    payment_hash: str = Query(...)
-
 class PaywallFileConfig(BaseModel):
     url: str
     headers: dict[str, str]
-    file_version: Optional[str]
     # todo: nice to have:
     # expiration_time: Optional[int]
     # max_number_of_downloads: Optional[int]
@@ -36,6 +20,21 @@ class PaywallConfig(BaseModel):
     file_config: Optional[PaywallFileConfig]
 
 
+class CreatePaywall(BaseModel):
+    url: str = Query(...)
+    memo: str = Query(...)
+    description: str = Query(None)
+    amount: int = Query(..., ge=0)
+    remembers: bool = Query(...)
+    extras: Optional[PaywallConfig] = None
+
+
+class CreatePaywallInvoice(BaseModel):
+    amount: int = Query(..., ge=1)
+
+
+class CheckPaywallInvoice(BaseModel):
+    payment_hash: str = Query(...)
 
 
 class Paywall(BaseModel):

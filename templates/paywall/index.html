@@ -240,7 +240,7 @@
             <q-btn
               unelevated
               color="primary"
-              :disable="formDialog.data.amount == null || formDialog.data.amount < 0 || formDialog.data.url == null || formDialog.data.memo == null"
+              :disable="!isValidForm"
               type="submit"
               >Create paywall</q-btn
             >
@@ -309,6 +309,8 @@
           data: {
             remembers: false,
             type: {id: 'url', label: 'Redirect URL'},
+            url: null,
+            fileUrl: null,
             headers: []
           }
         },
@@ -316,6 +318,29 @@
           {id: 'url', label: 'Redirect URL'},
           {id: 'file', label: 'File Download'}
         ],
+      }
+    },
+    computed: {
+      extras: function(){
+        const type =  this.formDialog.data.type.id;
+        let file_config = null
+        if (type === 'file'){
+          file_config = {
+            url: this.formDialog.data.fileUrl,
+            headers: this.formDialog.data.headers
+            .filter(v => !!v.key)
+            .reduce((a, h) => {
+              a[h.key] = h.value
+              return a
+            }, {})
+          }
+        }
+        return { type, file_config }
+      },
+      isValidForm: function(){
+        const url = this.formDialog.data.type.id === 'url' ? this.formDialog.data.url : this.formDialog.data.fileUrl
+
+        return url && this.formDialog.data.amount && this.formDialog.data.amount >= 0 && this.formDialog.data.memo
       }
     },
     methods: {
@@ -336,11 +361,13 @@
       },
       createPaywall: function () {
         var data = {
-          url: this.formDialog.data.url,
+          url: this.formDialog.data.url || '',
           memo: this.formDialog.data.memo,
           amount: this.formDialog.data.amount,
           description: this.formDialog.data.description,
-          remembers: this.formDialog.data.remembers
+          remembers: this.formDialog.data.remembers,
+          extras: this.extras
+
         }
         var self = this
 
