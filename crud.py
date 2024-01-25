@@ -1,10 +1,12 @@
 import json
 from typing import List, Optional, Union
 
+from sqlalchemy.sql import Update
+
 from lnbits.helpers import urlsafe_short_hash
 
 from . import db
-from .models import CreatePaywall, Paywall
+from .models import CreatePaywall, Paywall, UpdatePaywall
 
 
 async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
@@ -29,6 +31,31 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     paywall = await get_paywall(paywall_id)
     assert paywall, "Newly created paywall couldn't be retrieved"
     return paywall
+
+async def update_paywall(id: str, wallet_id: str, data: UpdatePaywall) -> Paywall:
+    await db.execute(
+        """
+        UPDATE paywall.paywalls
+        SET (id, wallet, url, memo, description, amount, remembers, extras) =
+        (?, ?, ?, ?, ?, ?, ?, ?)
+        WHERE id = ?
+        """,
+        (
+            wallet_id,
+            data.url,
+            data.memo,
+            data.description,
+            data.amount,
+            int(data.remembers),
+            json.dumps(data.extras.dict()) if data.extras else None,
+            id
+        ),
+    )
+
+    paywall = await get_paywall(data.id)
+    assert paywall, "Updated paywall couldn't be retrieved"
+    return paywall
+
 
 
 async def get_paywall(paywall_id: str) -> Optional[Paywall]:

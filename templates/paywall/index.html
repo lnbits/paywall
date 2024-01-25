@@ -108,7 +108,7 @@
 
   <q-dialog v-model="formDialog.show" position="top">
     <q-card v-if="formDialog.show" class="q-pa-lg q-pt-xl lnbits__dialog-card">
-      <q-form @submit="createPaywall" class="q-gutter-md">
+      <q-form @submit="createoOrUpdatePaywall" class="q-gutter-md">
         <q-select
           filled
           dense
@@ -248,7 +248,8 @@
               color="primary"
               :disable="!isValidForm"
               type="submit"
-              >Create paywall</q-btn
+              :label="formDialog.data.id ? 'Update Paywall' : 'Create paywall'"
+              ></q-btn
             >
             <q-btn v-close-popup flat color="grey" class="q-ml-auto"
               >Cancel</q-btn
@@ -378,37 +379,31 @@
         this.formDialog.show = true
         this.formDialog.data = paywallData || this.emptyPaywall()
       },
-      createPaywall: function () {
-        var data = {
-          url: this.formDialog.data.url || '',
-          memo: this.formDialog.data.memo,
-          amount: this.formDialog.data.amount,
-          description: this.formDialog.data.description,
-          remembers: this.formDialog.data.remembers,
-          extras: this.extras
+      createoOrUpdatePaywall: async function () {
+          try {
+            const paywall = {
+              url: this.formDialog.data.url || '',
+              memo: this.formDialog.data.memo,
+              amount: this.formDialog.data.amount,
+              description: this.formDialog.data.description,
+              remembers: this.formDialog.data.remembers,
+              extras: this.extras
+            }
 
+          const inkey =  _.findWhere(this.g.user.wallets, {id: this.formDialog.data.wallet}).inkey
+
+          const {data} = await LNbits.api.request('POST', '/paywall/api/v1/paywalls', inkey,  paywall)
+
+          this.paywalls.push(mapPaywall(data))
+          this.formDialog.show = false
+          this.formDialog.data = this.emptyPaywall()
+        } catch (error) {
+          LNbits.utils.notifyApiError(error)
         }
-        var self = this
-
-        LNbits.api
-          .request(
-            'POST',
-            '/paywall/api/v1/paywalls',
-            _.findWhere(this.g.user.wallets, {id: this.formDialog.data.wallet})
-              .inkey,
-            data
-          )
-          .then(function (response) {
-            self.paywalls.push(mapPaywall(response.data))
-            self.formDialog.show = false
-            self.formDialog.data = this.emptyPaywall()
-          })
-          .catch(function (error) {
-            LNbits.utils.notifyApiError(error)
-          })
       },
       editPaywall: function(paywallId) {
-        const paywall = this.paywalls.find(p => p.id === paywallId)
+        let paywall = this.paywalls.find(p => p.id === paywallId) || {}
+        paywall = {...this.emptyPaywall(), ...paywall}
         paywall.type = this.paywallTypeOptions.find(p => paywall.type === p.id) || this.paywallTypeOptions[0]
         this.showPaywallDialog(paywall)
       },
@@ -436,6 +431,8 @@
           })
       },
       addFileHttpHeader: function(){
+        console.log('### this.formDialog.data.headers', this.formDialog.data.headers)
+        this.formDialog.data.headers = this.formDialog.data.headers || []
         this.formDialog.data.headers.push({key: '', value:''})
       },
       removeFileHttpHeader: function(index){

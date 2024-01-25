@@ -28,6 +28,9 @@ class CreatePaywall(BaseModel):
     remembers: bool = Query(...)
     extras: Optional[PaywallConfig] = None
 
+class UpdatePaywall(CreatePaywall):
+    id: str = Query(...)
+
 
 class CreatePaywallInvoice(BaseModel):
     amount: int = Query(..., ge=1)

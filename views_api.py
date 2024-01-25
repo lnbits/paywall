@@ -8,8 +8,8 @@ from lnbits.core.services import check_transaction_status, create_invoice
 from lnbits.decorators import WalletTypeInfo, get_key_type
 
 from . import paywall_ext
-from .crud import create_paywall, delete_paywall, get_paywall, get_paywalls
-from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice
+from .crud import create_paywall, delete_paywall, get_paywall, get_paywalls, update_paywall
+from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice, UpdatePaywall
 
 
 @paywall_ext.get("/api/v1/paywalls")
@@ -30,6 +30,15 @@ async def api_paywall_create(
     data: CreatePaywall, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
     paywall = await create_paywall(wallet_id=wallet.wallet.id, data=data)
+    return paywall.dict()
+
+
+@paywall_ext.patch("/api/v1/paywalls/{id}")
+@paywall_ext.put("/api/v1/paywalls/{id}")
+async def api_paywall_create(
+    id: str, data: UpdatePaywall, wallet: WalletTypeInfo = Depends(get_key_type)
+):
+    paywall = await update_paywall(id=id, wallet_id=wallet.wallet.id, data=data)
     return paywall.dict()
 
 
