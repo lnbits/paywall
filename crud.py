@@ -6,7 +6,7 @@ from sqlalchemy.sql import Update
 from lnbits.helpers import urlsafe_short_hash
 
 from . import db
-from .models import CreatePaywall, Paywall, UpdatePaywall
+from .models import CreatePaywall, Paywall
 
 
 async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
@@ -32,12 +32,12 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     assert paywall, "Newly created paywall couldn't be retrieved"
     return paywall
 
-async def update_paywall(id: str, wallet_id: str, data: UpdatePaywall) -> Paywall:
+async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywall:
     await db.execute(
         """
         UPDATE paywall.paywalls
-        SET (id, wallet, url, memo, description, amount, remembers, extras) =
-        (?, ?, ?, ?, ?, ?, ?, ?)
+        SET (wallet, url, memo, description, amount, remembers, extras) =
+        (?, ?, ?, ?, ?, ?, ?)
         WHERE id = ?
         """,
         (
@@ -52,7 +52,7 @@ async def update_paywall(id: str, wallet_id: str, data: UpdatePaywall) -> Paywal
         ),
     )
 
-    paywall = await get_paywall(data.id)
+    paywall = await get_paywall(id)
     assert paywall, "Updated paywall couldn't be retrieved"
     return paywall
 

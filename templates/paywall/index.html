@@ -390,11 +390,21 @@
               extras: this.extras
             }
 
+          const paywallId = this.formDialog.data.id
+          let method = 'POST'
+          let path = '/paywall/api/v1/paywalls'
           const inkey =  _.findWhere(this.g.user.wallets, {id: this.formDialog.data.wallet}).inkey
 
-          const {data} = await LNbits.api.request('POST', '/paywall/api/v1/paywalls', inkey,  paywall)
+          if (paywallId){
+            method = 'PATCH'
+            path = `/paywall/api/v1/paywalls/${paywallId}`
+          }
 
-          this.paywalls.push(mapPaywall(data))
+          const {data} = await LNbits.api.request(method, path, inkey,  paywall)
+
+          this.paywalls = this.paywalls.filter(p => p.id !== data.id)
+          this.paywalls.unshift(mapPaywall(data))
+
           this.formDialog.show = false
           this.formDialog.data = this.emptyPaywall()
         } catch (error) {
