@@ -1,7 +1,8 @@
 from http import HTTPStatus
-
+from urllib import request
 from fastapi import Depends, Query
 from fastapi.exceptions import HTTPException
+from fastapi.responses import StreamingResponse
 
 from lnbits.core.crud import get_user, get_wallet
 from lnbits.core.services import check_transaction_status, create_invoice
@@ -112,3 +113,24 @@ async def api_paywal_check_invoice(
 
         return {"paid": True, "url": paywall.url, "remembers": paywall.remembers}
     return {"paid": False}
+
+
+
+@paywall_ext.get("/api/v1/paywalls/download/{paywall_id}")
+async def api_paywall_download_file(paywall_id: str):
+    paywall = await get_paywall(paywall_id)
+
+    if not paywall:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
+        )
+
+
+    async def file_streamer(url):
+        with request.urlopen(url) as dl_file:
+            yield dl_file.read()
+
+    url = "https://api.github.com/repos/motorina0/nostrclient/zipball/v0.3.3"
+    # url = "https://api.github.com/repos/motorina0/testext/zipball/v0.1"
+    headers={"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
+    return StreamingResponse(content=file_streamer(url), headers=headers)
