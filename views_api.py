@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Optional
 from urllib import request
 
 from fastapi import Depends, Query
@@ -119,22 +120,25 @@ async def api_paywal_check_invoice(data: CheckPaywallInvoice, paywall_id: str):
 
 
 @paywall_ext.get("/api/v1/paywalls/download/{paywall_id}")
-async def api_paywall_download_file(paywall_id: str):
-    paywall = await get_paywall(paywall_id)
+async def api_paywall_download_file(paywall_id: str, version: Optional[str] = None):
+    try:
+        paywall = await get_paywall(paywall_id)
+        assert paywall, "Paywall does not exist."
+        assert paywall.extras, "Paywall invalid."
+        assert paywall.extras.type == "file", "Paywall has not file to be downloaded."
 
-    if not paywall:
-        raise HTTPException(HTTPStatus.NOT_FOUND, "Paywall does not exist.")
+        async def file_streamer(url, headers):
+            with request.urlopen(request.Request(url=url, headers=headers)) as dl_file:
+                yield dl_file.read()
 
-    if not paywall.extras or paywall.extras.type != "file":
-        raise HTTPException(
-            HTTPStatus.NOT_FOUND, "Paywall has not file to be downloaded."
+        file_config = paywall.extras.file_config
+        assert file_config, "Cannot find file to download"
+
+        headers = {"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
+        if version:
+            file_config.url = file_config.url.format(version=version)
+        return StreamingResponse(
+            content=file_streamer(file_config.url, file_config.headers), headers=headers
         )
-
-    async def file_streamer(url):
-        with request.urlopen(url) as dl_file:
-            yield dl_file.read()
-
-    url = "https://api.github.com/repos/motorina0/nostrclient/zipball/v0.3.3"
-    # url = "https://api.github.com/repos/motorina0/testext/zipball/v0.1"
-    headers = {"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
-    return StreamingResponse(content=file_streamer(url), headers=headers)
+    except Exception as e:
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, str(e))
