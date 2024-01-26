@@ -1,8 +1,6 @@
 import json
 from typing import List, Optional, Union
 
-from sqlalchemy.sql import Update
-
 from lnbits.helpers import urlsafe_short_hash
 
 from . import db
@@ -13,7 +11,8 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     paywall_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO paywall.paywalls (id, wallet, url, memo, description, amount, remembers, extras)
+        INSERT INTO paywall.paywalls
+        (id, wallet, url, memo, description, amount, remembers, extras)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (

@@ -17,7 +17,7 @@ class PaywallFileConfig(BaseModel):
 class PaywallConfig(BaseModel):
     # possible types: 'url' and 'file'
     type: Optional[str] = "url"
-    file_config: Optional[PaywallFileConfig]
+    file_config: Optional[PaywallFileConfig] = None
 
 
 class CreatePaywall(BaseModel):

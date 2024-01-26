@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from urllib import request
+
 from fastapi import Depends, Query
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
@@ -42,7 +43,7 @@ async def api_paywall_create(
 
 @paywall_ext.patch("/api/v1/paywalls/{id}")
 @paywall_ext.put("/api/v1/paywalls/{id}")
-async def api_paywall_create(
+async def api_paywall_update(
     id: str, data: CreatePaywall, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
     paywall = await update_paywall(id=id, wallet_id=wallet.wallet.id, data=data)
