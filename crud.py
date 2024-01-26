@@ -38,7 +38,7 @@ async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywal
         UPDATE paywall.paywalls
         SET (wallet, url, memo, description, amount, remembers, extras) =
         (?, ?, ?, ?, ?, ?, ?)
-        WHERE id = ?
+        WHERE id = ? AND wallet = ?
         """,
         (
             wallet_id,
@@ -49,6 +49,7 @@ async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywal
             int(data.remembers),
             json.dumps(data.extras.dict()) if data.extras else None,
             id,
+            wallet_id,
         ),
     )
 

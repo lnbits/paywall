@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from lnbits.core.crud import get_user, get_wallet
 from lnbits.core.services import check_transaction_status, create_invoice
-from lnbits.decorators import WalletTypeInfo, get_key_type
+from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
 
 from . import paywall_ext
 from .crud import (
@@ -36,7 +36,7 @@ async def api_paywalls(
 
 @paywall_ext.post("/api/v1/paywalls")
 async def api_paywall_create(
-    data: CreatePaywall, wallet: WalletTypeInfo = Depends(get_key_type)
+    data: CreatePaywall, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
     paywall = await create_paywall(wallet_id=wallet.wallet.id, data=data)
     return paywall.dict()
@@ -45,7 +45,7 @@ async def api_paywall_create(
 @paywall_ext.patch("/api/v1/paywalls/{id}")
 @paywall_ext.put("/api/v1/paywalls/{id}")
 async def api_paywall_update(
-    id: str, data: CreatePaywall, wallet: WalletTypeInfo = Depends(get_key_type)
+    id: str, data: CreatePaywall, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
     paywall = await update_paywall(id=id, wallet_id=wallet.wallet.id, data=data)
     return paywall.dict()
@@ -53,7 +53,7 @@ async def api_paywall_update(
 
 @paywall_ext.delete("/api/v1/paywalls/{paywall_id}")
 async def api_paywall_delete(
-    paywall_id: str, wallet: WalletTypeInfo = Depends(get_key_type)
+    paywall_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
     paywall = await get_paywall(paywall_id)
 
@@ -120,7 +120,9 @@ async def api_paywal_check_invoice(data: CheckPaywallInvoice, paywall_id: str):
 
 
 @paywall_ext.get("/api/v1/paywalls/download/{paywall_id}")
-async def api_paywall_download_file(paywall_id: str, version: Optional[str] = None):
+async def api_paywall_download_file(
+    paywall_id: str, version: Optional[str] = None, token: Optional[str] = None
+):
     try:
         paywall = await get_paywall(paywall_id)
         assert paywall, "Paywall does not exist."

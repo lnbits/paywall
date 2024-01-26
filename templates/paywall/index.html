@@ -414,16 +414,16 @@
           const paywallId = this.formDialog.data.id
           let method = 'POST'
           let path = '/paywall/api/v1/paywalls'
-          const inkey = _.findWhere(this.g.user.wallets, {
+          const adminkey = _.findWhere(this.g.user.wallets, {
             id: this.formDialog.data.wallet
-          }).inkey
+          }).adminkey
 
           if (paywallId) {
             method = 'PATCH'
             path = `/paywall/api/v1/paywalls/${paywallId}`
           }
 
-          const {data} = await LNbits.api.request(method, path, inkey, paywall)
+          const {data} = await LNbits.api.request(method, path, adminkey, paywall)
 
           this.paywalls = this.paywalls.filter(p => p.id !== data.id)
           this.paywalls.unshift(mapPaywall(data))
@@ -453,7 +453,7 @@
               .request(
                 'DELETE',
                 '/paywall/api/v1/paywalls/' + paywallId,
-                _.findWhere(self.g.user.wallets, {id: paywall.wallet}).inkey
+                _.findWhere(self.g.user.wallets, {id: paywall.wallet}).adminkey
               )
               .then(function (response) {
                 self.paywalls = _.reject(self.paywalls, function (obj) {
