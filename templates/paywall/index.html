@@ -423,7 +423,12 @@
             path = `/paywall/api/v1/paywalls/${paywallId}`
           }
 
-          const {data} = await LNbits.api.request(method, path, adminkey, paywall)
+          const {data} = await LNbits.api.request(
+            method,
+            path,
+            adminkey,
+            paywall
+          )
 
           this.paywalls = this.paywalls.filter(p => p.id !== data.id)
           this.paywalls.unshift(mapPaywall(data))
