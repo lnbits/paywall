@@ -107,7 +107,7 @@ async def api_paywal_check_invoice(
 
     url = (
         paywall.url
-        or f"{request.base_url}paywall/api/v1/paywalls/download/{paywall.id}"
+        or f"{request.base_url}paywall/download/{paywall.id}"
         + f"?payment_hash={data.payment_hash}&version=__your_version_here___"
     )
 
@@ -117,7 +117,7 @@ async def api_paywal_check_invoice(
     return {"paid": False}
 
 
-@paywall_ext.get("/api/v1/paywalls/download/{paywall_id}")
+@paywall_ext.get("/download/{paywall_id}")
 async def api_paywall_download_file(
     paywall_id: str, version: Optional[str] = None, payment_hash: Optional[str] = None
 ):
