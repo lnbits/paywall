@@ -2,11 +2,11 @@ from http import HTTPStatus
 from typing import Optional
 from urllib import request
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Request
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 
-from lnbits.core.crud import get_user, get_wallet
+from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.services import check_transaction_status, create_invoice
 from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
 
@@ -18,7 +18,7 @@ from .crud import (
     get_paywalls,
     update_paywall,
 )
-from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice
+from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice, Paywall
 
 
 @paywall_ext.get("/api/v1/paywalls")
@@ -86,7 +86,7 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
             wallet_id=paywall.wallet,
             amount=amount,
             memo=f"{paywall.memo}",
-            extra={"tag": "paywall"},
+            extra={"tag": "paywall", "id": paywall.id},
         )
     except Exception as e:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
@@ -95,43 +95,43 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
 
 
 @paywall_ext.post("/api/v1/paywalls/check_invoice/{paywall_id}")
-async def api_paywal_check_invoice(data: CheckPaywallInvoice, paywall_id: str):
+async def api_paywal_check_invoice(
+    request: Request, data: CheckPaywallInvoice, paywall_id: str
+):
     paywall = await get_paywall(paywall_id)
-    payment_hash = data.payment_hash
     if not paywall:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
         )
-    try:
-        status = await check_transaction_status(paywall.wallet, payment_hash)
-        is_paid = not status.pending
-    except Exception:
-        return {"paid": False}
+    is_paid = await _is_payment_made(paywall, data.payment_hash)
+
+    url = (
+        paywall.url
+        or f"{request.base_url}paywall/api/v1/paywalls/download/{paywall.id}"
+        + f"?payment_hash={data.payment_hash}&version=__your_version_here___"
+    )
 
     if is_paid:
-        wallet = await get_wallet(paywall.wallet)
-        assert wallet
-        payment = await wallet.get_payment(payment_hash)
-        assert payment
-        await payment.set_pending(False)
+        return {"paid": True, "url": url, "remembers": paywall.remembers}
 
-        return {"paid": True, "url": paywall.url, "remembers": paywall.remembers}
     return {"paid": False}
 
 
 @paywall_ext.get("/api/v1/paywalls/download/{paywall_id}")
 async def api_paywall_download_file(
-    paywall_id: str, version: Optional[str] = None, token: Optional[str] = None
+    paywall_id: str, version: Optional[str] = None, payment_hash: Optional[str] = None
 ):
     try:
+        assert payment_hash, "Paywall payment hash is missing."
+
         paywall = await get_paywall(paywall_id)
         assert paywall, "Paywall does not exist."
         assert paywall.extras, "Paywall invalid."
         assert paywall.extras.type == "file", "Paywall has not file to be downloaded."
 
-        async def file_streamer(url, headers):
-            with request.urlopen(request.Request(url=url, headers=headers)) as dl_file:
-                yield dl_file.read()
+        is_paid = await _is_payment_made(paywall, payment_hash)
+
+        assert is_paid, "Invoice not paid."
 
         file_config = paywall.extras.file_config
         assert file_config, "Cannot find file to download"
@@ -140,7 +140,36 @@ async def api_paywall_download_file(
         if version:
             file_config.url = file_config.url.format(version=version)
         return StreamingResponse(
-            content=file_streamer(file_config.url, file_config.headers), headers=headers
+            content=_file_streamer(file_config.url, file_config.headers),
+            headers=headers,
         )
     except Exception as e:
         raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, str(e))
+
+
+async def _file_streamer(url, headers):
+    with request.urlopen(request.Request(url=url, headers=headers)) as dl_file:
+        yield dl_file.read()
+
+
+async def _is_payment_made(paywall: Paywall, payment_hash: str):
+    try:
+        status = await check_transaction_status(paywall.wallet, payment_hash)
+        is_paid = not status.pending
+    except Exception:
+        return False
+
+    if is_paid:
+        payment = await get_standalone_payment(
+            checking_id_or_hash=payment_hash, incoming=True, wallet_id=paywall.wallet
+        )
+        assert payment
+        if payment.extra.get("tag", None) != "paywall":
+            return False
+        paywall_id = payment.extra.get("id", None)
+        if paywall_id and paywall_id != paywall.id:
+            return False
+        await payment.set_pending(False)
+
+        return True
+    return False
