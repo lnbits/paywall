@@ -127,94 +127,107 @@
           placeholder="LNbits paywall"
         ></q-input>
         <q-input
-        filled
-        dense
-        v-model.number="formDialog.data.amount"
-        type="number"
-        label="Amount (sat) *"
-        hint="This is the minimum amount users can pay/donate."
-      ></q-input>
+          filled
+          dense
+          v-model.number="formDialog.data.amount"
+          type="number"
+          label="Amount (sat) *"
+          hint="This is the minimum amount users can pay/donate."
+        ></q-input>
         <q-select
-        filled
-        dense
-        emit-value
-        v-model="formDialog.data.type"
-        :options="paywallTypeOptions"
-        label="Paywall Type"
-      >
-      </q-select>
-      <div v-if="formDialog.data.type.id == 'url'">
-          <q-input
           filled
           dense
-          v-model.trim="formDialog.data.url"
-          type="url"
-          label="URL *"
-        ></q-input>
-      </div>
-      <div  v-else-if="formDialog.data.type.id == 'file'">
-        <q-input
-          filled
-          dense
-          v-model.trim="formDialog.data.fileUrl"
-          type="url"
-          label="File URL *"
-          hint="This is the location of the file. The client will never have direct access to it."
-          class="q-mb-sm"
-        ></q-input>
-        <div class="row q-mb-sm">
-          <div class="col-1">
-            <q-btn icon="info" flat size="sm"
-            ></q-btn
-          >
-          </div>
-          <div class="col-11">
-            <small class="">An optional `{version}` placeholder can be used in the URL. Example: 'https://api.github.com/repos/lnbits/paywall/zipball/{version}'</small>
-          </div>
-
-        </div>
-      <div class="row q-ml-md q-mb-sm q-mt-sm">
-        <div class="col-12">
-          <div>
-          <q-btn icon="add" label="Add Http Header"  @click="addFileHttpHeader" size="sm" unelevated color="secondary" class="float-right"
-          ></q-btn
+          emit-value
+          v-model="formDialog.data.type"
+          :options="paywallTypeOptions"
+          label="Paywall Type"
         >
+        </q-select>
+        <div v-if="formDialog.data.type.id == 'url'">
+          <q-input
+            filled
+            dense
+            v-model.trim="formDialog.data.url"
+            type="url"
+            label="URL *"
+          ></q-input>
         </div>
-      </div>
-
-      </div>
-        <div v-for="(header, index) in formDialog.data.headers" class="row q-mb-sm q-ml-md">
-          <div class="col-5">
-            <q-input
+        <div v-else-if="formDialog.data.type.id == 'file'">
+          <q-input
             filled
             dense
-            v-model.trim="header.key"
-            label="Key"
+            v-model.trim="formDialog.data.fileUrl"
+            type="url"
+            label="File URL *"
+            hint="This is the location of the file. The client will never have direct access to it."
+            class="q-mb-sm"
           ></q-input>
-          </div>
-          <div class="col-5">
-            <q-input
-            filled
-            dense
-            v-model.trim="header.value"
-            label="Value"
-            class="q-pl-sm"
-          ></q-input>
-          </div>
-          <div class="col-2">
-            <q-btn @click="removeFileHttpHeader(index)" icon="clear" size="sm" unelevated color="primary" class="float-right q-mt-sm"
-              ></q-btn
-            >
+          <div class="row q-mb-sm">
+            <div class="col-1">
+              <q-btn icon="info" flat size="sm"></q-btn>
             </div>
+            <div class="col-11">
+              <small class=""
+                >An optional `{version}` placeholder can be used in the URL.
+                Example:
+                'https://api.github.com/repos/lnbits/paywall/zipball/{version}'</small
+              >
+            </div>
+          </div>
+          <div class="row q-ml-md q-mb-sm q-mt-sm">
+            <div class="col-12">
+              <div>
+                <q-btn
+                  icon="add"
+                  label="Add Http Header"
+                  @click="addFileHttpHeader"
+                  size="sm"
+                  unelevated
+                  color="secondary"
+                  class="float-right"
+                ></q-btn>
+              </div>
+            </div>
+          </div>
+          <div
+            v-for="(header, index) in formDialog.data.headers"
+            class="row q-mb-sm q-ml-md"
+          >
+            <div class="col-5">
+              <q-input
+                filled
+                dense
+                v-model.trim="header.key"
+                label="Key"
+              ></q-input>
+            </div>
+            <div class="col-5">
+              <q-input
+                filled
+                dense
+                v-model.trim="header.value"
+                label="Value"
+                class="q-pl-sm"
+              ></q-input>
+            </div>
+            <div class="col-2">
+              <q-btn
+                @click="removeFileHttpHeader(index)"
+                icon="clear"
+                size="sm"
+                unelevated
+                color="primary"
+                class="float-right q-mt-sm"
+              ></q-btn>
+            </div>
+          </div>
         </div>
-
-      </div>
         <q-toggle
-        label="Advanced"
-        v-model="formDialog.showAdvanced"
-        class="q-mt-md"
-      ></q-toggle>
-      <div v-if="formDialog.showAdvanced">
+          label="Advanced"
+          v-model="formDialog.showAdvanced"
+          class="q-mt-md"
+        ></q-toggle>
+        <div v-if="formDialog.showAdvanced">
           <q-input
             filled
             dense
@@ -242,20 +255,18 @@
             </q-item>
           </q-list>
         </div>
-          <div class="row q-mt-lg">
-            <q-btn
-              unelevated
-              color="primary"
-              :disable="!isValidForm"
-              type="submit"
-              :label="formDialog.data.id ? 'Update Paywall' : 'Create paywall'"
-              ></q-btn
-            >
-            <q-btn v-close-popup flat color="grey" class="q-ml-auto"
-              >Cancel</q-btn
-            >
-          </div>
-
+        <div class="row q-mt-lg">
+          <q-btn
+            unelevated
+            color="primary"
+            :disable="!isValidForm"
+            type="submit"
+            :label="formDialog.data.id ? 'Update Paywall' : 'Create paywall'"
+          ></q-btn>
+          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
+            >Cancel</q-btn
+          >
+        </div>
       </q-form>
     </q-card>
   </q-dialog>
@@ -271,9 +282,11 @@
     obj.displayUrl = ['/paywall/', obj.id].join('')
     obj.type = obj.extras?.type
     obj.fileUrl = obj.extras?.file_config?.url
-    if (obj.extras?.file_config?.headers){
-      obj.headers = Object.entries(obj.extras?.file_config?.headers)
-        .map(h=>({key: h[0], value: h[1] }))
+    if (obj.extras?.file_config?.headers) {
+      obj.headers = Object.entries(obj.extras?.file_config?.headers).map(h => ({
+        key: h[0],
+        value: h[1]
+      }))
     }
     return obj
   }
@@ -324,41 +337,49 @@
         paywallTypeOptions: [
           {id: 'url', label: 'Redirect URL'},
           {id: 'file', label: 'File Download'}
-        ],
+        ]
       }
     },
     computed: {
-      extras: function(){
-        const type =  this.formDialog.data.type.id;
+      extras: function () {
+        const type = this.formDialog.data.type.id
         let file_config = null
-        if (type === 'file'){
+        if (type === 'file') {
           file_config = {
             url: this.formDialog.data.fileUrl,
             headers: this.formDialog.data.headers
-            .filter(v => !!v.key)
-            .reduce((a, h) => {
-              a[h.key] = h.value
-              return a
-            }, {})
+              .filter(v => !!v.key)
+              .reduce((a, h) => {
+                a[h.key] = h.value
+                return a
+              }, {})
           }
         }
-        return { type, file_config }
+        return {type, file_config}
       },
-      isValidForm: function(){
-        const url = this.formDialog.data.type.id === 'url' ? this.formDialog.data.url : this.formDialog.data.fileUrl
+      isValidForm: function () {
+        const url =
+          this.formDialog.data.type.id === 'url'
+            ? this.formDialog.data.url
+            : this.formDialog.data.fileUrl
 
-        return url && this.formDialog.data.amount && this.formDialog.data.amount >= 0 && this.formDialog.data.memo
+        return (
+          url &&
+          this.formDialog.data.amount &&
+          this.formDialog.data.amount >= 0 &&
+          this.formDialog.data.memo
+        )
       }
     },
     methods: {
-      emptyPaywall: function(){
-        return{
-            remembers: false,
-            type: this.paywallTypeOptions[0],
-            url: null,
-            fileUrl: null,
-            headers: []
-          }
+      emptyPaywall: function () {
+        return {
+          remembers: false,
+          type: this.paywallTypeOptions[0],
+          url: null,
+          fileUrl: null,
+          headers: []
+        }
       },
       getPaywalls: function () {
         var self = this
@@ -375,32 +396,34 @@
             })
           })
       },
-      showPaywallDialog: function(paywallData){
+      showPaywallDialog: function (paywallData) {
         this.formDialog.show = true
         this.formDialog.data = paywallData || this.emptyPaywall()
       },
       createoOrUpdatePaywall: async function () {
-          try {
-            const paywall = {
-              url: this.formDialog.data.url || '',
-              memo: this.formDialog.data.memo,
-              amount: this.formDialog.data.amount,
-              description: this.formDialog.data.description,
-              remembers: this.formDialog.data.remembers,
-              extras: this.extras
-            }
+        try {
+          const paywall = {
+            url: this.formDialog.data.url || '',
+            memo: this.formDialog.data.memo,
+            amount: this.formDialog.data.amount,
+            description: this.formDialog.data.description,
+            remembers: this.formDialog.data.remembers,
+            extras: this.extras
+          }
 
           const paywallId = this.formDialog.data.id
           let method = 'POST'
           let path = '/paywall/api/v1/paywalls'
-          const inkey =  _.findWhere(this.g.user.wallets, {id: this.formDialog.data.wallet}).inkey
+          const inkey = _.findWhere(this.g.user.wallets, {
+            id: this.formDialog.data.wallet
+          }).inkey
 
-          if (paywallId){
+          if (paywallId) {
             method = 'PATCH'
             path = `/paywall/api/v1/paywalls/${paywallId}`
           }
 
-          const {data} = await LNbits.api.request(method, path, inkey,  paywall)
+          const {data} = await LNbits.api.request(method, path, inkey, paywall)
 
           this.paywalls = this.paywalls.filter(p => p.id !== data.id)
           this.paywalls.unshift(mapPaywall(data))
@@ -411,10 +434,12 @@
           LNbits.utils.notifyApiError(error)
         }
       },
-      editPaywall: function(paywallId) {
+      editPaywall: function (paywallId) {
         let paywall = this.paywalls.find(p => p.id === paywallId) || {}
         paywall = {...this.emptyPaywall(), ...paywall}
-        paywall.type = this.paywallTypeOptions.find(p => paywall.type === p.id) || this.paywallTypeOptions[0]
+        paywall.type =
+          this.paywallTypeOptions.find(p => paywall.type === p.id) ||
+          this.paywallTypeOptions[0]
         this.showPaywallDialog(paywall)
       },
       deletePaywall: function (paywallId) {
@@ -440,16 +465,18 @@
               })
           })
       },
-      addFileHttpHeader: function(){
-        console.log('### this.formDialog.data.headers', this.formDialog.data.headers)
+      addFileHttpHeader: function () {
+        console.log(
+          '### this.formDialog.data.headers',
+          this.formDialog.data.headers
+        )
         this.formDialog.data.headers = this.formDialog.data.headers || []
-        this.formDialog.data.headers.push({key: '', value:''})
+        this.formDialog.data.headers.push({key: '', value: ''})
       },
-      removeFileHttpHeader: function(index){
+      removeFileHttpHeader: function (index) {
         if (index < this.formDialog.data.headers.length) {
           this.formDialog.data.headers.splice(index, 1)
         }
-
       },
       exportCSV: function () {
         LNbits.utils.exportCSV(this.paywallsTable.columns, this.paywalls)
