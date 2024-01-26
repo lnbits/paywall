@@ -121,10 +121,11 @@ async def api_paywall_download_file(paywall_id: str):
     paywall = await get_paywall(paywall_id)
 
     if not paywall:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
-        )
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Paywall does not exist.")
 
+
+    if not paywall.extras or paywall.extras.type != "file":
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Paywall has not file to be downloaded.")
 
     async def file_streamer(url):
         with request.urlopen(url) as dl_file:
