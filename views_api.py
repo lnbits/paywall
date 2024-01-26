@@ -9,7 +9,13 @@ from lnbits.core.services import check_transaction_status, create_invoice
 from lnbits.decorators import WalletTypeInfo, get_key_type
 
 from . import paywall_ext
-from .crud import create_paywall, delete_paywall, get_paywall, get_paywalls, update_paywall
+from .crud import (
+    create_paywall,
+    delete_paywall,
+    get_paywall,
+    get_paywalls,
+    update_paywall,
+)
 from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice
 
 
@@ -64,9 +70,7 @@ async def api_paywall_delete(
 
 
 @paywall_ext.post("/api/v1/paywalls/invoice/{paywall_id}")
-async def api_paywall_create_invoice(
-    data: CreatePaywallInvoice, paywall_id: str
-):
+async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str):
     paywall = await get_paywall(paywall_id)
     assert paywall
     if data.amount < paywall.amount:
@@ -89,9 +93,7 @@ async def api_paywall_create_invoice(
 
 
 @paywall_ext.post("/api/v1/paywalls/check_invoice/{paywall_id}")
-async def api_paywal_check_invoice(
-    data: CheckPaywallInvoice, paywall_id: str
-):
+async def api_paywal_check_invoice(data: CheckPaywallInvoice, paywall_id: str):
     paywall = await get_paywall(paywall_id)
     payment_hash = data.payment_hash
     if not paywall:
@@ -115,7 +117,6 @@ async def api_paywal_check_invoice(
     return {"paid": False}
 
 
-
 @paywall_ext.get("/api/v1/paywalls/download/{paywall_id}")
 async def api_paywall_download_file(paywall_id: str):
     paywall = await get_paywall(paywall_id)
@@ -123,9 +124,10 @@ async def api_paywall_download_file(paywall_id: str):
     if not paywall:
         raise HTTPException(HTTPStatus.NOT_FOUND, "Paywall does not exist.")
 
-
     if not paywall.extras or paywall.extras.type != "file":
-        raise HTTPException(HTTPStatus.NOT_FOUND, "Paywall has not file to be downloaded.")
+        raise HTTPException(
+            HTTPStatus.NOT_FOUND, "Paywall has not file to be downloaded."
+        )
 
     async def file_streamer(url):
         with request.urlopen(url) as dl_file:
@@ -133,5 +135,5 @@ async def api_paywall_download_file(paywall_id: str):
 
     url = "https://api.github.com/repos/motorina0/nostrclient/zipball/v0.3.3"
     # url = "https://api.github.com/repos/motorina0/testext/zipball/v0.1"
-    headers={"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
+    headers = {"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
     return StreamingResponse(content=file_streamer(url), headers=headers)

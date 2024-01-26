@@ -52,5 +52,7 @@ class Paywall(BaseModel):
     def from_row(cls, row: Row) -> "Paywall":
         data = dict(row)
         data["remembers"] = bool(data["remembers"])
-        data["extras"] = PaywallConfig(**json.loads(data["extras"])) if data["extras"] else None
+        data["extras"] = (
+            PaywallConfig(**json.loads(data["extras"])) if data["extras"] else None
+        )
         return cls(**data)

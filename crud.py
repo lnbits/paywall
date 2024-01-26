@@ -24,13 +24,14 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
             data.description,
             data.amount,
             int(data.remembers),
-            json.dumps(data.extras.dict()) if data.extras else None
+            json.dumps(data.extras.dict()) if data.extras else None,
         ),
     )
 
     paywall = await get_paywall(paywall_id)
     assert paywall, "Newly created paywall couldn't be retrieved"
     return paywall
+
 
 async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywall:
     await db.execute(
@@ -48,14 +49,13 @@ async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywal
             data.amount,
             int(data.remembers),
             json.dumps(data.extras.dict()) if data.extras else None,
-            id
+            id,
         ),
     )
 
     paywall = await get_paywall(id)
     assert paywall, "Updated paywall couldn't be retrieved"
     return paywall
-
 
 
 async def get_paywall(paywall_id: str) -> Optional[Paywall]:
