@@ -5,6 +5,7 @@ from urllib import request
 from fastapi import Depends, Query, Request
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
+from loguru import logger
 
 from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.services import check_transaction_status, create_invoice
@@ -135,6 +136,10 @@ async def api_paywall_download_file(
         is_paid = await _is_payment_made(paywall, payment_hash)
 
         assert is_paid, "Invoice not paid."
+        logger.info(
+            f"Downloading file for paywall '{paywall_id}'."
+            + f" Payment hash: '{payment_hash}', version: '{version}'."
+        )
 
         headers = {"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
         if version:
