@@ -148,8 +148,11 @@ async def api_paywall_download_file(
             content=_file_streamer(file_config.url, file_config.headers),
             headers=headers,
         )
+    except AssertionError as e:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
     except Exception as e:
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, str(e))
+        logger.error(e)
+        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file.")
 
 
 async def _file_streamer(url, headers):
