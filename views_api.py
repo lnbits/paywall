@@ -122,19 +122,19 @@ async def api_paywall_download_file(
     paywall_id: str, version: Optional[str] = None, payment_hash: Optional[str] = None
 ):
     try:
-        assert payment_hash, "Paywall payment hash is missing."
+        assert payment_hash, "Payment hash is missing."
 
         paywall = await get_paywall(paywall_id)
         assert paywall, "Paywall does not exist."
         assert paywall.extras, "Paywall invalid."
         assert paywall.extras.type == "file", "Paywall has not file to be downloaded."
 
+        file_config = paywall.extras.file_config
+        assert file_config, "Cannot find file to download"
+
         is_paid = await _is_payment_made(paywall, payment_hash)
 
         assert is_paid, "Invoice not paid."
-
-        file_config = paywall.extras.file_config
-        assert file_config, "Cannot find file to download"
 
         headers = {"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
         if version:
@@ -163,7 +163,7 @@ async def _is_payment_made(paywall: Paywall, payment_hash: str):
         payment = await get_standalone_payment(
             checking_id_or_hash=payment_hash, incoming=True, wallet_id=paywall.wallet
         )
-        assert payment
+        assert payment, f"Payment not found for payment_hash: '{payment_hash}'."
         if payment.extra.get("tag", None) != "paywall":
             return False
         paywall_id = payment.extra.get("id", None)
