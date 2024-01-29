@@ -74,25 +74,35 @@ async def api_paywall_delete(
 
 @paywall_ext.post("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str):
-    paywall = await get_paywall(paywall_id)
-    assert paywall
-    if data.amount < paywall.amount:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Minimum amount is {paywall.amount} sat.",
-        )
     try:
-        amount = data.amount if data.amount > paywall.amount else paywall.amount
-        payment_hash, payment_request = await create_invoice(
-            wallet_id=paywall.wallet,
-            amount=amount,
-            memo=f"{paywall.memo}",
-            extra={"tag": "paywall", "id": paywall.id},
-        )
+        paywall = await get_paywall(paywall_id)
+        assert paywall, "Paywall not found"
+        return await _create_paywall_invoice(paywall, data.amount)
+    except AssertionError as e:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
     except Exception as e:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
 
-    return {"payment_hash": payment_hash, "payment_request": payment_request}
+
+@paywall_ext.get("/api/v1/paywalls/invoice/{paywall_id}")
+async def api_paywall_create_fixed_amount_invoice(
+    paywall_id: str, amount: Optional[int] = None
+):
+    try:
+        paywall = await get_paywall(paywall_id)
+        assert paywall, "Paywall not found"
+
+        if not amount:
+            return {"amount": paywall.amount}
+
+        return await _create_paywall_invoice(paywall, amount)
+    except AssertionError as e:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Cannot create invoice.",
+        )
 
 
 @paywall_ext.post("/api/v1/paywalls/check_invoice/{paywall_id}")
@@ -158,6 +168,17 @@ async def api_paywall_download_file(
 async def _file_streamer(url, headers):
     with request.urlopen(request.Request(url=url, headers=headers)) as dl_file:
         yield dl_file.read()
+
+
+async def _create_paywall_invoice(paywall: Paywall, amount: int):
+    assert amount >= paywall.amount, f"Minimum amount is {paywall.amount} sat."
+    payment_hash, payment_request = await create_invoice(
+        wallet_id=paywall.wallet,
+        amount=max(amount, paywall.amount),
+        memo=f"{paywall.memo}",
+        extra={"tag": "paywall", "id": paywall.id},
+    )
+    return {"payment_hash": payment_hash, "payment_request": payment_request}
 
 
 async def _is_payment_made(paywall: Paywall, payment_hash: str):
