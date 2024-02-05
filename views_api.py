@@ -1,17 +1,24 @@
+from asyncio import Queue
 from http import HTTPStatus
+import json
 from typing import Optional
 from urllib import request
 
-from fastapi import Depends, Query, Request, Response
+from fastapi import Depends, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
 from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.services import check_transaction_status, create_invoice
-from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
+from lnbits.decorators import (
+    WalletTypeInfo,
+    check_admin,
+    get_key_type,
+    require_admin_key,
+)
 
-from . import paywall_ext
+from . import paywall_ext, paid_invoices, scheduled_tasks
 from .crud import (
     create_paywall,
     delete_paywall,
@@ -128,6 +135,38 @@ async def api_paywal_check_invoice(
     return {"paid": False}
 
 
+@paywall_ext.websocket("/download/{payment_hash}")
+async def websocket_connect(ws: WebSocket, payment_hash: str) -> None:
+    try:
+        await ws.accept()
+
+        payment = await get_standalone_payment(
+            checking_id_or_hash=payment_hash,
+            incoming=True,
+        )
+        if not payment:
+            await ws.send_text(json.dumps({"paid": False}))
+            return
+
+        if payment.extra.get("tag", None) != "paywall":
+            await ws.send_text(json.dumps({"paid": False}))
+            return
+
+        if not payment.pending:
+            await ws.send_text(json.dumps({"paid": True}))
+            return
+
+        paid_invoices[payment.payment_hash] = Queue()
+        paid_payment = await paid_invoices[payment.payment_hash].get()
+        del paid_invoices[paid_payment.payment_hash]
+        await ws.send_text(json.dumps({"paid": True}))
+
+    except WebSocketDisconnect as e:
+        logger.warning(e)
+    finally:
+        await ws.close()
+
+
 @paywall_ext.get("/download/{paywall_id}")
 async def api_paywall_download_file(
     paywall_id: str, version: Optional[str] = None, payment_hash: Optional[str] = None
@@ -192,6 +231,17 @@ async def api_paywall_check_file(paywall_id: str, payment_hash: Optional[str] = 
     except Exception as e:
         logger.error(e)
         raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file.")
+
+
+@paywall_ext.delete("/api/v1", status_code=HTTPStatus.OK)
+async def api_stop(wallet: WalletTypeInfo = Depends(check_admin)):
+    for t in scheduled_tasks:
+        try:
+            t.cancel()
+        except Exception as ex:
+            logger.warning(ex)
+
+    return {"success": True}
 
 
 async def _file_streamer(url, headers):
