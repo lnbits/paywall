@@ -135,10 +135,15 @@ async def api_paywal_check_invoice(
     return {"paid": False}
 
 
-@paywall_ext.websocket("/download/{payment_hash}")
-async def websocket_connect(ws: WebSocket, payment_hash: str) -> None:
+@paywall_ext.websocket("/api/v1/paywalls/invoice/{paywall_id}/{payment_hash}")
+async def websocket_connect(ws: WebSocket, paywall_id: str, payment_hash: str) -> None:
     try:
         await ws.accept()
+
+        paywall = await get_paywall(paywall_id)
+        if not paywall:
+            await ws.send_text(json.dumps({"paid": False}))
+            return
 
         payment = await get_standalone_payment(
             checking_id_or_hash=payment_hash,
