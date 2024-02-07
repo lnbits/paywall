@@ -207,6 +207,10 @@ async def api_paywall_download_file(
     except Exception as e:
         logger.error(e)
         raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file.")
+    finally:
+        logger.info(
+            f"Downloaded file for paywall '{paywall_id}'." + f" Version: '{version}'."
+        )
 
 
 @paywall_ext.head("/download/{paywall_id}")
