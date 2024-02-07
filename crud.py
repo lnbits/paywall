@@ -1,3 +1,4 @@
+import json
 from typing import List, Optional, Union
 
 from lnbits.helpers import urlsafe_short_hash
@@ -10,8 +11,9 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     paywall_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO paywall.paywalls (id, wallet, url, memo, description, amount, remembers)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO paywall.paywalls
+        (id, wallet, url, memo, description, amount, remembers, extras)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             paywall_id,
@@ -21,11 +23,38 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
             data.description,
             data.amount,
             int(data.remembers),
+            json.dumps(data.extras.dict()) if data.extras else None,
         ),
     )
 
     paywall = await get_paywall(paywall_id)
     assert paywall, "Newly created paywall couldn't be retrieved"
+    return paywall
+
+
+async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywall:
+    await db.execute(
+        """
+        UPDATE paywall.paywalls
+        SET (wallet, url, memo, description, amount, remembers, extras) =
+        (?, ?, ?, ?, ?, ?, ?)
+        WHERE id = ? AND wallet = ?
+        """,
+        (
+            wallet_id,
+            data.url,
+            data.memo,
+            data.description,
+            data.amount,
+            int(data.remembers),
+            json.dumps(data.extras.dict()) if data.extras else None,
+            id,
+            wallet_id,
+        ),
+    )
+
+    paywall = await get_paywall(id)
+    assert paywall, "Updated paywall couldn't be retrieved"
     return paywall
 
 

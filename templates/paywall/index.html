@@ -4,7 +4,7 @@
   <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
     <q-card>
       <q-card-section>
-        <q-btn unelevated color="primary" @click="formDialog.show = true"
+        <q-btn unelevated color="primary" @click="showPaywallDialog()"
           >New paywall</q-btn
         >
       </q-card-section>
@@ -61,6 +61,15 @@
                   :href="props.row.url"
                   target="_blank"
                 ></q-btn>
+                <q-btn
+                  @click="editPaywall(props.row.id)"
+                  unelevated
+                  dense
+                  size="xs"
+                  icon="edit"
+                  :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
+                  class="q-ml-sm"
+                ></q-btn>
               </q-td>
               <q-td v-for="col in props.cols" :key="col.name" :props="props">
                 {{ col.value }}
@@ -98,8 +107,8 @@
   </div>
 
   <q-dialog v-model="formDialog.show" position="top">
-    <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
-      <q-form @submit="createPaywall" class="q-gutter-md">
+    <q-card v-if="formDialog.show" class="q-pa-lg q-pt-xl lnbits__dialog-card">
+      <q-form @submit="createoOrUpdatePaywall" class="q-gutter-md">
         <q-select
           filled
           dense
@@ -109,13 +118,7 @@
           label="Wallet *"
         >
         </q-select>
-        <q-input
-          filled
-          dense
-          v-model.trim="formDialog.data.url"
-          type="url"
-          label="Redirect URL *"
-        ></q-input>
+
         <q-input
           filled
           dense
@@ -126,44 +129,140 @@
         <q-input
           filled
           dense
-          autogrow
-          v-model.trim="formDialog.data.description"
-          label="Description"
-        ></q-input>
-        <q-input
-          filled
-          dense
           v-model.number="formDialog.data.amount"
           type="number"
           label="Amount (sat) *"
           hint="This is the minimum amount users can pay/donate."
         ></q-input>
-        <q-list>
-          <q-item tag="label" class="rounded-borders">
-            <q-item-section avatar>
-              <q-checkbox
-                v-model="formDialog.data.remembers"
-                color="primary"
-              ></q-checkbox>
-            </q-item-section>
-            <q-item-section>
-              <q-item-label>Remember payments</q-item-label>
-              <q-item-label caption
-                >A succesful payment will be registered in the browser's
-                storage, so the user doesn't need to pay again to access the
-                URL.</q-item-label
+        <q-select
+          filled
+          dense
+          emit-value
+          v-model="formDialog.data.type"
+          :options="paywallTypeOptions"
+          label="Paywall Type"
+        >
+        </q-select>
+        <div v-if="formDialog.data.type.id == 'url'">
+          <q-input
+            filled
+            dense
+            v-model.trim="formDialog.data.url"
+            type="url"
+            label="URL *"
+          ></q-input>
+        </div>
+        <div v-else-if="formDialog.data.type.id == 'file'">
+          <q-input
+            filled
+            dense
+            v-model.trim="formDialog.data.fileUrl"
+            type="url"
+            label="File URL *"
+            hint="This is the location of the file. The client will never have direct access to it."
+            class="q-mb-sm"
+          ></q-input>
+          <div class="row q-mb-sm">
+            <div class="col-1">
+              <q-btn icon="info" flat size="sm"></q-btn>
+            </div>
+            <div class="col-11">
+              <small class=""
+                >An optional `{version}` placeholder can be used in the URL.
+                Example:
+                'https://api.github.com/repos/lnbits/paywall/zipball/{version}'</small
               >
-            </q-item-section>
-          </q-item>
-        </q-list>
+            </div>
+          </div>
+          <div class="row q-ml-md q-mb-sm q-mt-sm">
+            <div class="col-12">
+              <div>
+                <q-btn
+                  icon="add"
+                  label="Add Http Header"
+                  @click="addFileHttpHeader"
+                  size="sm"
+                  unelevated
+                  color="secondary"
+                  class="float-right"
+                ></q-btn>
+              </div>
+            </div>
+          </div>
+          <div
+            v-for="(header, index) in formDialog.data.headers"
+            class="row q-mb-sm q-ml-md"
+          >
+            <div class="col-5">
+              <q-input
+                filled
+                dense
+                v-model.trim="header.key"
+                label="Key"
+              ></q-input>
+            </div>
+            <div class="col-5">
+              <q-input
+                filled
+                dense
+                v-model.trim="header.value"
+                label="Value"
+                class="q-pl-sm"
+              ></q-input>
+            </div>
+            <div class="col-2">
+              <q-btn
+                @click="removeFileHttpHeader(index)"
+                icon="clear"
+                size="sm"
+                unelevated
+                color="primary"
+                class="float-right q-mt-sm"
+              ></q-btn>
+            </div>
+          </div>
+        </div>
+        <q-toggle
+          label="Advanced"
+          v-model="formDialog.showAdvanced"
+          class="q-mt-md"
+        ></q-toggle>
+        <div v-if="formDialog.showAdvanced">
+          <q-input
+            filled
+            dense
+            autogrow
+            v-model.trim="formDialog.data.description"
+            label="Description"
+          ></q-input>
+
+          <q-list>
+            <q-item tag="label" class="rounded-borders">
+              <q-item-section avatar>
+                <q-checkbox
+                  v-model="formDialog.data.remembers"
+                  color="primary"
+                ></q-checkbox>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label>Remember payments</q-item-label>
+                <q-item-label caption
+                  >A succesful payment will be registered in the browser's
+                  storage, so the user doesn't need to pay again to access the
+                  URL.</q-item-label
+                >
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </div>
         <div class="row q-mt-lg">
           <q-btn
             unelevated
             color="primary"
-            :disable="formDialog.data.amount == null || formDialog.data.amount < 0 || formDialog.data.url == null || formDialog.data.memo == null"
+            :disable="!isValidForm"
             type="submit"
-            >Create paywall</q-btn
-          >
+            :label="formDialog.data.id ? 'Update Paywall' : 'Create paywall'"
+          ></q-btn>
           <q-btn v-close-popup flat color="grey" class="q-ml-auto"
             >Cancel</q-btn
           >
@@ -181,6 +280,14 @@
     )
     obj.fsat = new Intl.NumberFormat(LOCALE).format(obj.amount)
     obj.displayUrl = ['/paywall/', obj.id].join('')
+    obj.type = obj.extras?.type
+    obj.fileUrl = obj.extras?.file_config?.url
+    if (obj.extras?.file_config?.headers) {
+      obj.headers = Object.entries(obj.extras?.file_config?.headers).map(h => ({
+        key: h[0],
+        value: h[1]
+      }))
+    }
     return obj
   }
 
@@ -224,13 +331,56 @@
         },
         formDialog: {
           show: false,
-          data: {
-            remembers: false
+          showAdvanced: false,
+          data: null
+        },
+        paywallTypeOptions: [
+          {id: 'url', label: 'Redirect URL'},
+          {id: 'file', label: 'File Download'}
+        ]
+      }
+    },
+    computed: {
+      extras: function () {
+        const type = this.formDialog.data.type.id
+        let file_config = null
+        if (type === 'file') {
+          file_config = {
+            url: this.formDialog.data.fileUrl,
+            headers: this.formDialog.data.headers
+              .filter(v => !!v.key)
+              .reduce((a, h) => {
+                a[h.key] = h.value
+                return a
+              }, {})
           }
         }
+        return {type, file_config}
+      },
+      isValidForm: function () {
+        const url =
+          this.formDialog.data.type.id === 'url'
+            ? this.formDialog.data.url
+            : this.formDialog.data.fileUrl
+
+        return (
+          url &&
+          this.formDialog.data.amount &&
+          this.formDialog.data.amount >= 0 &&
+          this.formDialog.data.memo
+        )
       }
     },
     methods: {
+      emptyPaywall: function () {
+        return {
+          remembers: false,
+          type: this.paywallTypeOptions[0],
+          url: null,
+          fileUrl: null,
+          headers: []
+        }
+      },
       getPaywalls: function () {
         var self = this
 
@@ -246,34 +396,56 @@
             })
           })
       },
-      createPaywall: function () {
-        var data = {
-          url: this.formDialog.data.url,
-          memo: this.formDialog.data.memo,
-          amount: this.formDialog.data.amount,
-          description: this.formDialog.data.description,
-          remembers: this.formDialog.data.remembers
-        }
-        var self = this
+      showPaywallDialog: function (paywallData) {
+        this.formDialog.show = true
+        this.formDialog.data = paywallData || this.emptyPaywall()
+      },
+      createoOrUpdatePaywall: async function () {
+        try {
+          const paywall = {
+            url: this.formDialog.data.url || '',
+            memo: this.formDialog.data.memo,
+            amount: this.formDialog.data.amount,
+            description: this.formDialog.data.description,
+            remembers: this.formDialog.data.remembers,
+            extras: this.extras
+          }
 
-        LNbits.api
-          .request(
-            'POST',
-            '/paywall/api/v1/paywalls',
-            _.findWhere(this.g.user.wallets, {id: this.formDialog.data.wallet})
-              .inkey,
-            data
+          const paywallId = this.formDialog.data.id
+          let method = 'POST'
+          let path = '/paywall/api/v1/paywalls'
+          const adminkey = _.findWhere(this.g.user.wallets, {
+            id: this.formDialog.data.wallet
+          }).adminkey
+
+          if (paywallId) {
+            method = 'PATCH'
+            path = `/paywall/api/v1/paywalls/${paywallId}`
+          }
+
+          const {data} = await LNbits.api.request(
+            method,
+            path,
+            adminkey,
+            paywall
           )
-          .then(function (response) {
-            self.paywalls.push(mapPaywall(response.data))
-            self.formDialog.show = false
-            self.formDialog.data = {
-              remembers: false
-            }
-          })
-          .catch(function (error) {
-            LNbits.utils.notifyApiError(error)
-          })
+
+          this.paywalls = this.paywalls.filter(p => p.id !== data.id)
+          this.paywalls.unshift(mapPaywall(data))
+
+          this.formDialog.show = false
+          this.formDialog.data = this.emptyPaywall()
+        } catch (error) {
+          LNbits.utils.notifyApiError(error)
+        }
+      },
+      editPaywall: function (paywallId) {
+        let paywall = this.paywalls.find(p => p.id === paywallId) || {}
+        paywall = {...this.emptyPaywall(), ...paywall}
+        paywall.type =
+          this.paywallTypeOptions.find(p => paywall.type === p.id) ||
+          this.paywallTypeOptions[0]
+        this.showPaywallDialog(paywall)
       },
       deletePaywall: function (paywallId) {
         var self = this
@@ -286,7 +458,7 @@
               .request(
                 'DELETE',
                 '/paywall/api/v1/paywalls/' + paywallId,
-                _.findWhere(self.g.user.wallets, {id: paywall.wallet}).inkey
+                _.findWhere(self.g.user.wallets, {id: paywall.wallet}).adminkey
               )
               .then(function (response) {
                 self.paywalls = _.reject(self.paywalls, function (obj) {
@@ -297,6 +469,15 @@
                 LNbits.utils.notifyApiError(error)
               })
           })
+      },
+      addFileHttpHeader: function () {
+        this.formDialog.data.headers = this.formDialog.data.headers || []
+        this.formDialog.data.headers.push({key: '', value: ''})
+      },
+      removeFileHttpHeader: function (index) {
+        if (index < this.formDialog.data.headers.length) {
+          this.formDialog.data.headers.splice(index, 1)
+        }
       },
       exportCSV: function () {
         LNbits.utils.exportCSV(this.paywallsTable.columns, this.paywalls)

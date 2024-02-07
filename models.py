@@ -6,12 +6,27 @@ from fastapi import Query
 from pydantic import BaseModel
 
 
+class PaywallFileConfig(BaseModel):
+    url: str
+    headers: dict[str, str]
+    # todo: nice to have:
+    # expiration_time: Optional[int]
+    # max_number_of_downloads: Optional[int]
+
+
+class PaywallConfig(BaseModel):
+    # possible types: 'url' and 'file'
+    type: Optional[str] = "url"
+    file_config: Optional[PaywallFileConfig] = None
+
+
 class CreatePaywall(BaseModel):
     url: str = Query(...)
     memo: str = Query(...)
     description: str = Query(None)
     amount: int = Query(..., ge=0)
     remembers: bool = Query(...)
+    extras: Optional[PaywallConfig] = None
 
 
 class CreatePaywallInvoice(BaseModel):
@@ -31,11 +46,13 @@ class Paywall(BaseModel):
     amount: int
     time: int
     remembers: bool
-    extras: Optional[dict]
+    extras: Optional[PaywallConfig] = PaywallConfig()
 
     @classmethod
     def from_row(cls, row: Row) -> "Paywall":
         data = dict(row)
         data["remembers"] = bool(data["remembers"])
-        data["extras"] = json.loads(data["extras"]) if data["extras"] else None
+        data["extras"] = (
+            PaywallConfig(**json.loads(data["extras"])) if data["extras"] else None
+        )
         return cls(**data)
