@@ -13,12 +13,11 @@ from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.services import check_transaction_status, create_invoice
 from lnbits.decorators import (
     WalletTypeInfo,
-    check_admin,
     get_key_type,
     require_admin_key,
 )
 
-from . import paywall_ext, paid_invoices, scheduled_tasks
+from . import paywall_ext, paid_invoices
 from .crud import (
     create_paywall,
     delete_paywall,
@@ -240,17 +239,6 @@ async def api_paywall_check_file(paywall_id: str, payment_hash: Optional[str] = 
     except Exception as e:
         logger.error(e)
         raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file.")
-
-
-@paywall_ext.delete("/api/v1", status_code=HTTPStatus.OK)
-async def api_stop(wallet: WalletTypeInfo = Depends(check_admin)):
-    for t in scheduled_tasks:
-        try:
-            t.cancel()
-        except Exception as ex:
-            logger.warning(ex)
-
-    return {"success": True}
 
 
 async def _file_streamer(url, headers):

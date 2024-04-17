@@ -1,11 +1,12 @@
 import asyncio
 from typing import List
 from fastapi import APIRouter
-from asyncio import Queue, Task
+from asyncio import Task
+from loguru import logger
 
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
-from lnbits.tasks import catch_everything_and_restart
+from lnbits.tasks import create_permanent_unique_task
 
 db = Database("ext_paywall")
 
@@ -23,15 +24,20 @@ def paywall_renderer():
     return template_renderer(["paywall/templates"])
 
 
-scheduled_tasks: List[Task] = []
-
-
 from .tasks import wait_for_paid_invoices, paid_invoices  # noqa: F401,F403,E402
 from .views import *  # noqa: F401,F403,E402
 from .views_api import *  # noqa: F401,F403,E402
 
 
+scheduled_tasks: list[asyncio.Task] = []
+
+def paywall_stop():
+    for task in scheduled_tasks:
+        try:
+            task.cancel()
+        except Exception as ex:
+            logger.warning(ex)
+
 def paywall_start():
-    loop = asyncio.get_event_loop()
-    task1 = loop.create_task(catch_everything_and_restart(wait_for_paid_invoices))
-    scheduled_tasks.append(task1)
+    task = create_permanent_unique_task("ext_paywall", wait_for_paid_invoices)
+    scheduled_tasks.append(task)
