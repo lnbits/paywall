@@ -3,5 +3,5 @@
   "short_description": "Create paywalls for content",
   "tile": "/paywall/static/image/paywall.png",
   "contributors": ["eillarra"],
-  "min_lnbits_version": "0.11.0"
+  "min_lnbits_version": "0.12.5"
 }
