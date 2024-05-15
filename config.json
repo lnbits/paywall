@@ -2,6 +2,27 @@
   "name": "Paywall",
   "short_description": "Create paywalls for content",
   "tile": "/paywall/static/image/paywall.png",
-  "contributors": ["eillarra"],
-  "min_lnbits_version": "0.12.5"
+  "min_lnbits_version": "0.12.5",
+  "contributors": [
+    {
+      "name": "eillarra",
+      "uri": "https://github.com/eillarra",
+      "role": "Contributor"
+    }
+  ],
+  "images": [
+    {
+      "uri": "https://raw.githubusercontent.com/lnbits/paywall/main/static/image/1.jpg",
+      "link": "https://www.youtube.com/embed/N0fU_0gbaXs?si=ijsKN4IbQcH2vVkI"
+    },
+    {
+      "uri": "https://raw.githubusercontent.com/lnbits/paywall/main/static/image/1.png"
+    },
+    {
+      "uri": "https://raw.githubusercontent.com/lnbits/paywall/main/static/image/2.png"
+    }
+  ],
+  "description_md": "https://raw.githubusercontent.com/lnbits/paywall/main/description.md",
+  "terms_and_conditions_md": "https://raw.githubusercontent.com/lnbits/paywall/main/toc.md",
+  "license": "MIT"
 }

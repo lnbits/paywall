@@ -1,0 +1,3 @@
+Hide content behind a paywall, a user has to pay some amount to access your hidden content.
+
+A Paywall is a way of restricting to content via a purchase or paid subscription. For example to read a determined blog post, or to continue reading further, to access a downloads area, etc...
