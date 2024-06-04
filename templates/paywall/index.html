@@ -44,7 +44,7 @@
                 <q-btn
                   unelevated
                   dense
-                  size="xs"
+                  size="sm"
                   icon="launch"
                   :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
                   type="a"
@@ -54,18 +54,18 @@
                 <q-btn
                   unelevated
                   dense
-                  size="xs"
+                  size="sm"
                   icon="link"
                   :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
-                  type="a"
-                  :href="props.row.url"
-                  target="_blank"
-                ></q-btn>
+                  @click="copyToClipboard(props.row.downloadUrl)"
+                  class="q-ml-sm"
+                  ><q-tooltip>Copy paywall download link</q-tooltip></q-btn
+                >
                 <q-btn
                   @click="editPaywall(props.row.id)"
                   unelevated
                   dense
-                  size="xs"
+                  size="sm"
                   icon="edit"
                   :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
                   class="q-ml-sm"
@@ -78,7 +78,7 @@
                 <q-btn
                   flat
                   dense
-                  size="xs"
+                  size="sm"
                   @click="deletePaywall(props.row.id)"
                   icon="cancel"
                   color="pink"
@@ -280,6 +280,7 @@
     )
     obj.fsat = new Intl.NumberFormat(LOCALE).format(obj.amount)
     obj.displayUrl = ['/paywall/', obj.id].join('')
+    obj.downloadUrl = ['/paywall/download/', obj.id].join('')
     obj.type = obj.extras?.type
     obj.fileUrl = obj.extras?.file_config?.url
     if (obj.extras?.file_config?.headers) {
@@ -394,6 +395,7 @@
             self.paywalls = response.data.map(function (obj) {
               return mapPaywall(obj)
             })
+            console.log(self.paywalls)
           })
       },
       showPaywallDialog: function (paywallData) {
@@ -481,6 +483,15 @@
       },
       exportCSV: function () {
         LNbits.utils.exportCSV(this.paywallsTable.columns, this.paywalls)
+      },
+      copyToClipboard(url) {
+        const {protocol, host, port} = window.location
+        Quasar.utils.copyToClipboard(`${protocol}//${host}${url}`).then(() => {
+          this.$q.notify({
+            message: 'Copied to clipboard!',
+            position: 'bottom'
+          })
+        })
       }
     },
     created: function () {
