@@ -31,12 +31,14 @@ from .views_api import *  # noqa: F401,F403,E402
 
 scheduled_tasks: list[asyncio.Task] = []
 
+
 def paywall_stop():
     for task in scheduled_tasks:
         try:
             task.cancel()
         except Exception as ex:
             logger.warning(ex)
+
 
 def paywall_start():
     task = create_permanent_unique_task("ext_paywall", wait_for_paid_invoices)
