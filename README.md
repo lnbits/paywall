@@ -24,6 +24,7 @@ A Paywall is a way of restricting to content via a purchase or paid subscription
    ![user paywall view](https://i.imgur.com/3pLywkZ.png)
 
 ### File Paywall
+
 It is possible to also protect a file behind a paywall.
 
 https://github.com/lnbits/paywall/assets/2951406/527c176c-38ff-4198-a4c1-6d07807e7443
