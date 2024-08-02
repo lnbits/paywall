@@ -1,24 +1,29 @@
 from http import HTTPStatus
 
-from fastapi import Depends
+from fastapi import APIRouter, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.requests import Request
-
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
+from lnbits.helpers import template_renderer
 
-from . import paywall_ext, paywall_renderer
 from .crud import get_paywall
 
+paywall_generic_router = APIRouter()
 
-@paywall_ext.get("/")
+
+def paywall_renderer():
+    return template_renderer(["paywall/templates"])
+
+
+@paywall_generic_router.get("/")
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return paywall_renderer().TemplateResponse(
         "paywall/index.html", {"request": request, "user": user.dict()}
     )
 
 
-@paywall_ext.get("/{paywall_id}")
+@paywall_generic_router.get("/{paywall_id}")
 async def display(request: Request, paywall_id: str):
     paywall = await get_paywall(paywall_id)
     if not paywall:

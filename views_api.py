@@ -1,23 +1,29 @@
+import json
 from asyncio import Queue
 from http import HTTPStatus
-import json
 from typing import Optional
 from urllib import request
 
-from fastapi import Depends, Query, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    Request,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
-from loguru import logger
-
 from lnbits.core.crud import get_standalone_payment, get_user
+from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import check_transaction_status, create_invoice
 from lnbits.decorators import (
-    WalletTypeInfo,
     get_key_type,
     require_admin_key,
 )
+from loguru import logger
 
-from . import paywall_ext, paid_invoices
 from .crud import (
     create_paywall,
     delete_paywall,
@@ -26,9 +32,12 @@ from .crud import (
     update_paywall,
 )
 from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice, Paywall
+from .tasks import paid_invoices
+
+paywall_api_router = APIRouter()
 
 
-@paywall_ext.get("/api/v1/paywalls")
+@paywall_api_router.get("/api/v1/paywalls")
 async def api_paywalls(
     wallet: WalletTypeInfo = Depends(get_key_type), all_wallets: bool = Query(False)
 ):
@@ -41,7 +50,7 @@ async def api_paywalls(
     return [paywall.dict() for paywall in await get_paywalls(wallet_ids)]
 
 
-@paywall_ext.post("/api/v1/paywalls")
+@paywall_api_router.post("/api/v1/paywalls")
 async def api_paywall_create(
     data: CreatePaywall, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
@@ -49,16 +58,20 @@ async def api_paywall_create(
     return paywall.dict()
 
 
-@paywall_ext.patch("/api/v1/paywalls/{id}")
-@paywall_ext.put("/api/v1/paywalls/{id}")
+@paywall_api_router.patch("/api/v1/paywalls/{id}")
+@paywall_api_router.put("/api/v1/paywalls/{id}")
 async def api_paywall_update(
-    id: str, data: CreatePaywall, wallet: WalletTypeInfo = Depends(require_admin_key)
+    paywall_id: str,
+    data: CreatePaywall,
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
-    paywall = await update_paywall(id=id, wallet_id=wallet.wallet.id, data=data)
+    paywall = await update_paywall(
+        paywall_id=paywall_id, wallet_id=wallet.wallet.id, data=data
+    )
     return paywall.dict()
 
 
-@paywall_ext.delete("/api/v1/paywalls/{paywall_id}")
+@paywall_api_router.delete("/api/v1/paywalls/{paywall_id}")
 async def api_paywall_delete(
     paywall_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
@@ -78,19 +91,21 @@ async def api_paywall_delete(
     return "", HTTPStatus.NO_CONTENT
 
 
-@paywall_ext.post("/api/v1/paywalls/invoice/{paywall_id}")
+@paywall_api_router.post("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str):
     try:
         paywall = await get_paywall(paywall_id)
         assert paywall, "Paywall not found"
         return await _create_paywall_invoice(paywall, data.amount)
-    except AssertionError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
-    except Exception as e:
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
+    except AssertionError as exc:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
-@paywall_ext.get("/api/v1/paywalls/invoice/{paywall_id}")
+@paywall_api_router.get("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_fixed_amount_invoice(
     paywall_id: str, amount: Optional[int] = None
 ):
@@ -102,16 +117,16 @@ async def api_paywall_create_fixed_amount_invoice(
             return {"amount": paywall.amount}
 
         return await _create_paywall_invoice(paywall, amount)
-    except AssertionError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
-    except Exception as e:
+    except AssertionError as exc:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
+    except Exception as exc:
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Cannot create invoice.",
-        )
+        ) from exc
 
 
-@paywall_ext.post("/api/v1/paywalls/check_invoice/{paywall_id}")
+@paywall_api_router.post("/api/v1/paywalls/check_invoice/{paywall_id}")
 async def api_paywal_check_invoice(
     request: Request, data: CheckPaywallInvoice, paywall_id: str
 ):
@@ -134,7 +149,7 @@ async def api_paywal_check_invoice(
     return {"paid": False}
 
 
-@paywall_ext.websocket("/api/v1/paywalls/invoice/{paywall_id}/{payment_hash}")
+@paywall_api_router.websocket("/api/v1/paywalls/invoice/{paywall_id}/{payment_hash}")
 async def websocket_connect(ws: WebSocket, paywall_id: str, payment_hash: str) -> None:
     try:
         await ws.accept()
@@ -171,7 +186,7 @@ async def websocket_connect(ws: WebSocket, paywall_id: str, payment_hash: str) -
         await ws.close()
 
 
-@paywall_ext.get("/download/{paywall_id}")
+@paywall_api_router.get("/download/{paywall_id}")
 async def api_paywall_download_file(
     paywall_id: str, version: Optional[str] = None, payment_hash: Optional[str] = None
 ):
@@ -201,18 +216,20 @@ async def api_paywall_download_file(
             content=_file_streamer(file_config.url, file_config.headers),
             headers=headers,
         )
-    except AssertionError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file.")
+    except AssertionError as exc:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
+    except Exception as exc:
+        logger.error(exc)
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file."
+        ) from exc
     finally:
         logger.info(
             f"Downloaded file for paywall '{paywall_id}'." + f" Version: '{version}'."
         )
 
 
-@paywall_ext.head("/download/{paywall_id}")
+@paywall_api_router.head("/download/{paywall_id}")
 async def api_paywall_check_file(paywall_id: str, payment_hash: Optional[str] = None):
     try:
         assert payment_hash, "Payment hash is missing."
@@ -234,11 +251,13 @@ async def api_paywall_check_file(paywall_id: str, payment_hash: Optional[str] = 
             headers={"paid_sats": f"{int(paid_amount / 1000)}"},
         )
 
-    except AssertionError as e:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(e))
-    except Exception as e:
-        logger.error(e)
-        raise HTTPException(HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file.")
+    except AssertionError as exc:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
+    except Exception as exc:
+        logger.error(exc)
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, "Cannot download file."
+        ) from exc
 
 
 async def _file_streamer(url, headers):

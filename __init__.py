@@ -1,16 +1,17 @@
 import asyncio
-from typing import List
+
 from fastapi import APIRouter
-from asyncio import Task
+from lnbits.tasks import create_permanent_unique_task
 from loguru import logger
 
-from lnbits.db import Database
-from lnbits.helpers import template_renderer
-from lnbits.tasks import create_permanent_unique_task
-
-db = Database("ext_paywall")
+from .crud import db
+from .tasks import wait_for_paid_invoices
+from .views import paywall_generic_router
+from .views_api import paywall_api_router
 
 paywall_ext: APIRouter = APIRouter(prefix="/paywall", tags=["Paywall"])
+paywall_ext.include_router(paywall_generic_router)
+paywall_ext.include_router(paywall_api_router)
 
 paywall_static_files = [
     {
@@ -18,17 +19,6 @@ paywall_static_files = [
         "name": "paywall_static",
     }
 ]
-
-
-def paywall_renderer():
-    return template_renderer(["paywall/templates"])
-
-
-from .tasks import wait_for_paid_invoices, paid_invoices  # noqa: F401,F403,E402
-from .views import *  # noqa: F401,F403,E402
-from .views_api import *  # noqa: F401,F403,E402
-
-
 scheduled_tasks: list[asyncio.Task] = []
 
 
@@ -43,3 +33,6 @@ def paywall_stop():
 def paywall_start():
     task = create_permanent_unique_task("ext_paywall", wait_for_paid_invoices)
     scheduled_tasks.append(task)
+
+
+__all__ = ["db", "paywall_ext", "paywall_static_files", "paywall_start", "paywall_stop"]

@@ -1,10 +1,12 @@
 import json
 from typing import List, Optional, Union
 
+from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
-from . import db
 from .models import CreatePaywall, Paywall
+
+db = Database("ext_paywall")
 
 
 async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
@@ -32,7 +34,9 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     return paywall
 
 
-async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywall:
+async def update_paywall(
+    paywall_id: str, wallet_id: str, data: CreatePaywall
+) -> Paywall:
     await db.execute(
         """
         UPDATE paywall.paywalls
@@ -48,12 +52,12 @@ async def update_paywall(id: str, wallet_id: str, data: CreatePaywall) -> Paywal
             data.amount,
             int(data.remembers),
             json.dumps(data.extras.dict()) if data.extras else None,
-            id,
+            paywall_id,
             wallet_id,
         ),
     )
 
-    paywall = await get_paywall(id)
+    paywall = await get_paywall(paywall_id)
     assert paywall, "Updated paywall couldn't be retrieved"
     return paywall
 
