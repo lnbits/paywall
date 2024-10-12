@@ -274,7 +274,6 @@ async def _is_payment_made(paywall: Paywall, payment_hash: str) -> int:
         paywall_id = payment.extra.get("id", None)
         if paywall_id and paywall_id != paywall.id:
             return 0
-        await payment.set_pending(False)
 
         return payment.amount
     return 0
