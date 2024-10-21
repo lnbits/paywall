@@ -23,18 +23,20 @@
         <q-table
           dense
           flat
-          :data="paywalls"
+          :rows="paywalls"
           row-key="id"
           :columns="paywallsTable.columns"
-          :pagination.sync="paywallsTable.pagination"
+          v-model:pagination="paywallsTable.pagination"
         >
-          {% raw %}
           <template v-slot:header="props">
             <q-tr :props="props">
               <q-th auto-width></q-th>
-              <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.label }}
-              </q-th>
+              <q-th
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                v-text="col.label"
+              ></q-th>
               <q-th auto-width></q-th>
             </q-tr>
           </template>
@@ -71,9 +73,12 @@
                   class="q-ml-sm"
                 ></q-btn>
               </q-td>
-              <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                {{ col.value }}
-              </q-td>
+              <q-td
+                v-for="col in props.cols"
+                :key="col.name"
+                :props="props"
+                v-text="col.value"
+              ></q-td>
               <q-td auto-width>
                 <q-btn
                   flat
@@ -86,7 +91,6 @@
               </q-td>
             </q-tr>
           </template>
-          {% endraw %}
         </q-table>
       </q-card-section>
     </q-card>
@@ -273,8 +277,8 @@
 </div>
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script>
-  var mapPaywall = function (obj) {
-    obj.date = Quasar.utils.date.formatDate(
+  const mapPaywall = function (obj) {
+    obj.date = Quasar.date.formatDate(
       new Date(obj.time * 1000),
       'YYYY-MM-DD HH:mm'
     )
@@ -292,10 +296,10 @@
     return obj
   }
 
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     mixins: [windowMixin],
-    data: function () {
+    data() {
       return {
         paywalls: [],
         paywallsTable: {
@@ -308,7 +312,7 @@
               label: 'Amount (sat)',
               field: 'fsat',
               sortable: true,
-              sort: function (a, b, rowA, rowB) {
+              sort(a, b, rowA, rowB) {
                 return rowA.amount - rowB.amount
               }
             },
@@ -342,7 +346,7 @@
       }
     },
     computed: {
-      extras: function () {
+      extras() {
         const type = this.formDialog.data.type.id
         let file_config = null
         if (type === 'file') {
@@ -358,7 +362,7 @@
         }
         return {type, file_config}
       },
-      isValidForm: function () {
+      isValidForm() {
         const url =
           this.formDialog.data.type.id === 'url'
             ? this.formDialog.data.url
@@ -373,7 +377,7 @@
       }
     },
     methods: {
-      emptyPaywall: function () {
+      emptyPaywall() {
         return {
           remembers: false,
           type: this.paywallTypeOptions[0],
@@ -382,26 +386,24 @@
           headers: []
         }
       },
-      getPaywalls: function () {
-        var self = this
-
+      getPaywalls() {
         LNbits.api
           .request(
             'GET',
             '/paywall/api/v1/paywalls?all_wallets=true',
             this.g.user.wallets[0].inkey
           )
-          .then(function (response) {
+          .then((response) => {
             self.paywalls = response.data.map(function (obj) {
               return mapPaywall(obj)
             })
           })
       },
-      showPaywallDialog: function (paywallData) {
+      showPaywallDialog(paywallData) {
         this.formDialog.show = true
         this.formDialog.data = paywallData || this.emptyPaywall()
       },
-      createoOrUpdatePaywall: async function () {
+      createoOrUpdatePaywall: async () => {
         try {
           const paywall = {
             url: this.formDialog.data.url || '',
@@ -440,7 +442,7 @@
           LNbits.utils.notifyApiError(error)
         }
       },
-      editPaywall: function (paywallId) {
+      editPaywall(paywallId) {
         let paywall = this.paywalls.find(p => p.id === paywallId) || {}
         paywall = {...this.emptyPaywall(), ...paywall}
         paywall.type =
@@ -448,52 +450,48 @@
           this.paywallTypeOptions[0]
         this.showPaywallDialog(paywall)
       },
-      deletePaywall: function (paywallId) {
-        var self = this
-        var paywall = _.findWhere(this.paywalls, {id: paywallId})
-
+      deletePaywall(paywallId) {
+        const paywall = _.findWhere(this.paywalls, {id: paywallId})
         LNbits.utils
           .confirmDialog('Are you sure you want to delete this paywall link?')
-          .onOk(function () {
+          .onOk(() => {
             LNbits.api
               .request(
                 'DELETE',
                 '/paywall/api/v1/paywalls/' + paywallId,
                 _.findWhere(self.g.user.wallets, {id: paywall.wallet}).adminkey
               )
-              .then(function (response) {
-                self.paywalls = _.reject(self.paywalls, function (obj) {
+              .then((response) => {
+                self.paywalls = _.reject(self.paywalls, (obj) => {
                   return obj.id == paywallId
                 })
               })
-              .catch(function (error) {
-                LNbits.utils.notifyApiError(error)
-              })
+              .catch(LNbits.utils.notifyApiError)
           })
       },
-      addFileHttpHeader: function () {
+      addFileHttpHeader() {
         this.formDialog.data.headers = this.formDialog.data.headers || []
         this.formDialog.data.headers.push({key: '', value: ''})
       },
-      removeFileHttpHeader: function (index) {
+      removeFileHttpHeader(index) {
         if (index < this.formDialog.data.headers.length) {
           this.formDialog.data.headers.splice(index, 1)
         }
       },
-      exportCSV: function () {
+      exportCSV() {
         LNbits.utils.exportCSV(this.paywallsTable.columns, this.paywalls)
       },
       copyToClipboard(url) {
         const {protocol, host, port} = window.location
-        Quasar.utils.copyToClipboard(`${protocol}//${host}${url}`).then(() => {
-          this.$q.notify({
+        Quasar..copyToClipboard(`${protocol}//${host}${url}`).then(() => {
+          Quasar.Notify.create({
             message: 'Copied to clipboard!',
             position: 'bottom'
           })
         })
       }
     },
-    created: function () {
+    created() {
       if (this.g.user.wallets.length) {
         this.getPaywalls()
       }

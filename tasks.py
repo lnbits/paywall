@@ -8,7 +8,7 @@ paid_invoices: dict[str, Queue] = {}
 
 async def wait_for_paid_invoices():
     invoice_queue = Queue()
-    register_invoice_listener(invoice_queue)
+    register_invoice_listener(invoice_queue, "ext_paywall")
 
     while True:
         payment = await invoice_queue.get()

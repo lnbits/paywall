@@ -19,7 +19,7 @@ def paywall_renderer():
 @paywall_generic_router.get("/")
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return paywall_renderer().TemplateResponse(
-        "paywall/index.html", {"request": request, "user": user.dict()}
+        "paywall/index.html", {"request": request, "user": user.json()}
     )
 
 
