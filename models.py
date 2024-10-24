@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Query
@@ -42,6 +43,6 @@ class Paywall(BaseModel):
     memo: str
     description: Optional[str]
     amount: int
-    time: int
     remembers: bool
+    time: datetime = datetime.now(timezone.utc)
     extras: Optional[PaywallExtra] = PaywallExtra()

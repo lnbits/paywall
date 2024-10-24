@@ -3,12 +3,10 @@
   <div class="col-12 col-sm-8 col-md-5 col-lg-4">
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
-        <h5 class="text-subtitle1 q-mt-none q-mb-sm">{{ paywall.memo }}</h5>
-        {% if paywall.description %}
-        <p>{{ paywall.description }}</p>
-        {% endif %}
+        <h5 class="text-subtitle1 q-mt-none q-mb-sm" v-text="paywallMemo"></h5>
+        <p v-show="paywallDescription" v-text="paywallDescription"></p>
         <div v-if="!this.redirectUrl" class="q-mt-lg">
-          <q-form v-if="">
+          <q-form>
             <q-input
               filled
               v-model.number="userAmount"
@@ -33,7 +31,6 @@
             <a class="text-secondary" :href="'lightning:' + paymentReq">
               <lnbits-qrcode
                 :value="'lightning:' + paymentReq.toUpperCase()"
-                :options="{width: 800}"
                 class="rounded-borders"
               ></lnbits-qrcode>
             </a>
@@ -65,96 +62,7 @@
 </div>
 {% endblock %} {% block scripts %}
 <script>
-  window.app = Vue.createApp({
-    el: '#vue',
-    mixins: [windowMixin],
-    data() {
-      return {
-        userAmount: '{{ paywall.amount }}',
-        paywallAmount: '{{ paywall.amount }}',
-        paymentReq: null,
-        redirectUrl: null,
-        paymentDialog: {
-          dismissMsg: null,
-          checker: null
-        }
-      }
-    },
-    computed: {
-      amount() {
-        return this.paywallAmount > this.userAmount
-          ? this.paywallAmount
-          : this.userAmount
-      }
-    },
-    methods: {
-      cancelPayment() {
-        this.paymentReq = null
-        clearInterval(this.paymentDialog.checker)
-        if (this.paymentDialog.dismissMsg) {
-          this.paymentDialog.dismissMsg()
-        }
-      },
-      createInvoice() {
-        LNbits.api
-          .request(
-            'POST',
-            '/paywall/api/v1/paywalls/invoice/{{ paywall.id }}',
-            'filler',
-            {
-              amount: this.amount
-            }
-          )
-          .then(response => {
-            if (response.data) {
-              this.paymentReq = response.data.payment_request.toUpperCase()
-              this.paymentDialog.dismissMsg = Quasar.Notify.create({
-                timeout: 0,
-                message: 'Waiting for payment...'
-              })
-
-              this.paymentDialog.checker = setInterval(() => {
-                LNbits.api
-                  .request(
-                    'POST',
-                    '/paywall/api/v1/paywalls/check_invoice/{{ paywall.id }}',
-                    'filler',
-                    {payment_hash: response.data.payment_hash}
-                  )
-                  .then(response => {
-                    if (response.data) {
-                      if (response.data.paid) {
-                        this.cancelPayment()
-                        this.redirectUrl = response.data.url
-                        if (response.data.remembers) {
-                          this.$q.localStorage.set(
-                            'lnbits.paywall.{{ paywall.id }}',
-                            response.data.url
-                          )
-                        }
-                        Quasar.Notify.create({
-                          type: 'positive',
-                          message: 'Payment received!',
-                          icon: null
-                        })
-                      }
-                    }
-                  })
-                  .catch(LNbits.utils.notifyApiError)
-              }, 2000)
-            }
-          })
-          .catch(LNbits.utils.notifyApiError)
-      }
-    },
-    created() {
-      const url = this.$q.localStorage.getItem(
-        'lnbits.paywall.{{ paywall.id }}'
-      )
-      if (url) {
-        this.redirectUrl = url
-      }
-    }
-  })
+  const paywall = JSON.parse({{ paywall | tojson | safe }})
 </script>
+<script src="{{ static_url_for('paywall/static', path='js/display.js') }}"></script>
 {% endblock %}

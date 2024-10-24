@@ -42,22 +42,8 @@ async def m002_redux(db):
     """
     )
 
-    for row in [
-        list(row) for row in await db.fetchall("SELECT * FROM paywall.paywalls_old")
-    ]:
-        await db.execute(
-            """
-            INSERT INTO paywall.paywalls (
-                id,
-                wallet,
-                url,
-                memo,
-                amount,
-                time
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (row[0], row[1], row[3], row[4], row[5], row[6]),
-        )
-
+    await db.execute(
+        "INSERT INTO paywall.paywalls "
+        "SELECT id, wallet, url, memo, amount, time FROM paywall.paywalls_old"
+    )
     await db.execute("DROP TABLE paywall.paywalls_old")
