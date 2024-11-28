@@ -24,9 +24,12 @@ async def m001_initial(db: Connection):
 
 async def m002_redux(db: Connection):
     """
-    Creates an improved paywalls table and migrates the existing data.
+    - add description
+    - add remembers
+    - add extras
+    - drop secret
     """
-    await db.execute("ALTER TABLE paywall.paywalls RENAME TO paywalls_old")
+    await db.execute("ALTER TABLE paywall.paywalls RENAME TO paywalls_m001")
 
     await db.execute(
         f"""
@@ -37,20 +40,18 @@ async def m002_redux(db: Connection):
             memo TEXT NOT NULL,
             description TEXT NULL,
             amount {db.big_int} DEFAULT 0,
-            time TIMESTAMP NOT NULL DEFAULT """
-        + db.timestamp_now
-        + """,
+            time TIMESTAMP NOT NULL DEFAULT {db.timestamp_now},
             remembers INTEGER DEFAULT 0,
             extras TEXT NULL
         );
-    """
+        """
     )
 
     await db.execute(
         """
         INSERT INTO paywall.paywalls
-        SELECT id, wallet, url, memo, description, amount, time
-        FROM paywall.paywalls_old
+        SELECT id, wallet, url, memo, NULL, amount, time, 0, NULL
+        FROM paywall.paywalls_m001
         """
     )
-    await db.execute("DROP TABLE paywall.paywalls_old")
+    await db.execute("DROP TABLE paywall.paywalls_m001")
