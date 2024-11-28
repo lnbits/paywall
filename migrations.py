@@ -47,7 +47,10 @@ async def m002_redux(db: Connection):
     )
 
     await db.execute(
-        "INSERT INTO paywall.paywalls "
-        "SELECT id, wallet, url, memo, description, amount, time FROM paywall.paywalls_old"
+        """
+        INSERT INTO paywall.paywalls
+        SELECT id, wallet, url, memo, description, amount, time
+        FROM paywall.paywalls_old
+        """
     )
     await db.execute("DROP TABLE paywall.paywalls_old")

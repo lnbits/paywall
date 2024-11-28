@@ -15,8 +15,6 @@ from fastapi import (
 )
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
-from loguru import logger
-
 from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import check_transaction_status, create_invoice
@@ -24,6 +22,7 @@ from lnbits.decorators import (
     require_admin_key,
     require_invoice_key,
 )
+from loguru import logger
 
 from .crud import (
     create_paywall,
