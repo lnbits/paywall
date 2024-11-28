@@ -19,8 +19,8 @@ from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import check_transaction_status, create_invoice
 from lnbits.decorators import (
-    get_key_type,
     require_admin_key,
+    require_invoice_key,
 )
 from loguru import logger
 
@@ -39,36 +39,46 @@ paywall_api_router = APIRouter()
 
 @paywall_api_router.get("/api/v1/paywalls")
 async def api_paywalls(
-    wallet: WalletTypeInfo = Depends(get_key_type), all_wallets: bool = Query(False)
-):
+    wallet: WalletTypeInfo = Depends(require_invoice_key),
+    all_wallets: bool = Query(False),
+) -> list[Paywall]:
     wallet_ids = [wallet.wallet.id]
 
     if all_wallets:
         user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
 
-    return [paywall.dict() for paywall in await get_paywalls(wallet_ids)]
+    return await get_paywalls(wallet_ids)
 
 
 @paywall_api_router.post("/api/v1/paywalls")
 async def api_paywall_create(
     data: CreatePaywall, wallet: WalletTypeInfo = Depends(require_admin_key)
-):
+) -> Paywall:
     paywall = await create_paywall(wallet_id=wallet.wallet.id, data=data)
-    return paywall.dict()
+    return paywall
 
 
-@paywall_api_router.patch("/api/v1/paywalls/{id}")
-@paywall_api_router.put("/api/v1/paywalls/{id}")
+@paywall_api_router.patch("/api/v1/paywalls/{paywall_id}")
+@paywall_api_router.put("/api/v1/paywalls/{paywall_id}")
 async def api_paywall_update(
     paywall_id: str,
     data: CreatePaywall,
     wallet: WalletTypeInfo = Depends(require_admin_key),
-):
-    paywall = await update_paywall(
-        paywall_id=paywall_id, wallet_id=wallet.wallet.id, data=data
-    )
-    return paywall.dict()
+) -> Paywall:
+    paywall = await get_paywall(paywall_id)
+    if not paywall:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
+        )
+    if not paywall.wallet == wallet.wallet.id:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="Not your paywall."
+        )
+    for k, v in data.dict().items():
+        setattr(paywall, k, v)
+    await update_paywall(paywall)
+    return paywall
 
 
 @paywall_api_router.delete("/api/v1/paywalls/{paywall_id}")
@@ -88,42 +98,32 @@ async def api_paywall_delete(
         )
 
     await delete_paywall(paywall_id)
-    return "", HTTPStatus.NO_CONTENT
 
 
 @paywall_api_router.post("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str):
-    try:
-        paywall = await get_paywall(paywall_id)
-        assert paywall, "Paywall not found"
-        return await _create_paywall_invoice(paywall, data.amount)
-    except AssertionError as exc:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
-    except Exception as exc:
+    paywall = await get_paywall(paywall_id)
+    if not paywall:
         raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
-        ) from exc
+            status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
+        )
+    return await _create_paywall_invoice(paywall, data.amount)
 
 
 @paywall_api_router.get("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_fixed_amount_invoice(
     paywall_id: str, amount: Optional[int] = None
 ):
-    try:
-        paywall = await get_paywall(paywall_id)
-        assert paywall, "Paywall not found"
-
-        if not amount:
-            return {"amount": paywall.amount}
-
-        return await _create_paywall_invoice(paywall, amount)
-    except AssertionError as exc:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
-    except Exception as exc:
+    paywall = await get_paywall(paywall_id)
+    if not paywall:
         raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            detail="Cannot create invoice.",
-        ) from exc
+            status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
+        )
+
+    if not amount:
+        return {"amount": paywall.amount}
+
+    return await _create_paywall_invoice(paywall, amount)
 
 
 @paywall_api_router.post("/api/v1/paywalls/check_invoice/{paywall_id}")
@@ -266,14 +266,18 @@ async def _file_streamer(url, headers):
 
 
 async def _create_paywall_invoice(paywall: Paywall, amount: int):
-    assert amount >= paywall.amount, f"Minimum amount is {paywall.amount} sat."
-    payment_hash, payment_request = await create_invoice(
+    if amount < paywall.amount:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Minimum amount is {paywall.amount} sat.",
+        )
+    payment = await create_invoice(
         wallet_id=paywall.wallet,
         amount=max(amount, paywall.amount),
         memo=f"{paywall.memo}",
         extra={"tag": "paywall", "id": paywall.id},
     )
-    return {"payment_hash": payment_hash, "payment_request": payment_request}
+    return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}
 
 
 async def _is_payment_made(paywall: Paywall, payment_hash: str) -> int:

@@ -1,4 +1,7 @@
-async def m001_initial(db):
+from lnbits.db import Connection
+
+
+async def m001_initial(db: Connection):
     """
     Initial paywalls table.
     """
@@ -19,11 +22,15 @@ async def m001_initial(db):
     )
 
 
-async def m002_redux(db):
+async def m002_redux(db: Connection):
     """
-    Creates an improved paywalls table and migrates the existing data.
+    - add description
+    - add remembers
+    - add extras
+    - drop secret
     """
-    await db.execute("ALTER TABLE paywall.paywalls RENAME TO paywalls_old")
+    await db.execute("ALTER TABLE paywall.paywalls RENAME TO paywalls_m001")
+
     await db.execute(
         f"""
         CREATE TABLE paywall.paywalls (
@@ -33,31 +40,18 @@ async def m002_redux(db):
             memo TEXT NOT NULL,
             description TEXT NULL,
             amount {db.big_int} DEFAULT 0,
-            time TIMESTAMP NOT NULL DEFAULT """
-        + db.timestamp_now
-        + """,
+            time TIMESTAMP NOT NULL DEFAULT {db.timestamp_now},
             remembers INTEGER DEFAULT 0,
             extras TEXT NULL
         );
-    """
+        """
     )
 
-    for row in [
-        list(row) for row in await db.fetchall("SELECT * FROM paywall.paywalls_old")
-    ]:
-        await db.execute(
-            """
-            INSERT INTO paywall.paywalls (
-                id,
-                wallet,
-                url,
-                memo,
-                amount,
-                time
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (row[0], row[1], row[3], row[4], row[5], row[6]),
-        )
-
-    await db.execute("DROP TABLE paywall.paywalls_old")
+    await db.execute(
+        """
+        INSERT INTO paywall.paywalls
+        SELECT id, wallet, url, memo, NULL, amount, time, 0, NULL
+        FROM paywall.paywalls_m001
+        """
+    )
+    await db.execute("DROP TABLE paywall.paywalls_m001")

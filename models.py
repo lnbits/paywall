@@ -1,5 +1,4 @@
-import json
-from sqlite3 import Row
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Query
@@ -14,7 +13,7 @@ class PaywallFileConfig(BaseModel):
     # max_number_of_downloads: Optional[int]
 
 
-class PaywallConfig(BaseModel):
+class PaywallExtra(BaseModel):
     # possible types: 'url' and 'file'
     type: Optional[str] = "url"
     file_config: Optional[PaywallFileConfig] = None
@@ -26,7 +25,7 @@ class CreatePaywall(BaseModel):
     description: str = Query(None)
     amount: int = Query(..., ge=0)
     remembers: bool = Query(...)
-    extras: Optional[PaywallConfig] = None
+    extras: Optional[PaywallExtra] = None
 
 
 class CreatePaywallInvoice(BaseModel):
@@ -44,15 +43,6 @@ class Paywall(BaseModel):
     memo: str
     description: Optional[str]
     amount: int
-    time: int
     remembers: bool
-    extras: Optional[PaywallConfig] = PaywallConfig()
-
-    @classmethod
-    def from_row(cls, row: Row) -> "Paywall":
-        data = dict(row)
-        data["remembers"] = bool(data["remembers"])
-        data["extras"] = (
-            PaywallConfig(**json.loads(data["extras"])) if data["extras"] else None
-        )
-        return cls(**data)
+    time: datetime = datetime.now(timezone.utc)
+    extras: Optional[PaywallExtra] = PaywallExtra()

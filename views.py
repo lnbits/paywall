@@ -19,7 +19,7 @@ def paywall_renderer():
 @paywall_generic_router.get("/")
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return paywall_renderer().TemplateResponse(
-        "paywall/index.html", {"request": request, "user": user.dict()}
+        "paywall/index.html", {"request": request, "user": user.json()}
     )
 
 
@@ -31,5 +31,5 @@ async def display(request: Request, paywall_id: str):
             status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
         )
     return paywall_renderer().TemplateResponse(
-        "paywall/display.html", {"request": request, "paywall": paywall}
+        "paywall/display.html", {"request": request, "paywall": paywall.json()}
     )
