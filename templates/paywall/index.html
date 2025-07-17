@@ -131,12 +131,22 @@
           placeholder="LNbits paywall"
           hint="If using file download use the file name as the title. (file.zip)"
         ></q-input>
+        <q-select
+          filled
+          dense
+          emit-value
+          v-model="formDialog.data.currency"
+          :options="currencyOptions"
+          label="Currency"
+        >
+        </q-select>
         <q-input
           filled
           dense
+          inputmode="numeric"
           v-model.number="formDialog.data.amount"
           type="number"
-          label="Amount (sat) *"
+          label="Amount *"
           hint="This is the minimum amount users can pay/donate."
         ></q-input>
         <q-select

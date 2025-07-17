@@ -12,9 +12,9 @@
               v-model.number="userAmount"
               type="number"
               :min="paywallAmount"
-              suffix="sat"
+              :suffix="paywallCurrency"
               label="Choose an amount *"
-              :hint="'Minimum ' + paywallAmount + ' sat'"
+              :hint="`Minimum ${formattedAmount}`"
             >
             </q-input>
             <div class="row q-mt-lg">
@@ -51,7 +51,12 @@
             <strong style="word-break: break-all" v-text="redirectUrl"></strong>
           </p>
           <div class="row q-mt-lg">
-            <q-btn outline color="grey" type="a" :href="redirectUrl"
+            <q-btn
+              outline
+              color="grey"
+              type="a"
+              :href="redirectUrl"
+              rel="noopener noreferrer"
               >Open URL</q-btn
             >
           </div>

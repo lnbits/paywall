@@ -25,9 +25,15 @@ window.app = Vue.createApp({
           {name: 'id', align: 'left', label: 'ID', field: 'id'},
           {name: 'memo', align: 'left', label: 'Memo', field: 'memo'},
           {
+            name: 'currency',
+            align: 'left',
+            label: 'Currency',
+            field: 'currency'
+          },
+          {
             name: 'amount',
             align: 'right',
-            label: 'Amount (sat)',
+            label: 'Amount',
             field: 'fsat',
             sortable: true,
             sort(a, b, rowA, rowB) {
@@ -60,7 +66,8 @@ window.app = Vue.createApp({
       paywallTypeOptions: [
         {id: 'url', label: 'Redirect URL'},
         {id: 'file', label: 'File Download'}
-      ]
+      ],
+      currencyOptions: []
     }
   },
   computed: {
@@ -126,6 +133,7 @@ window.app = Vue.createApp({
         const paywall = {
           url: this.formDialog.data.url || '',
           memo: this.formDialog.data.memo,
+          currency: this.formDialog.data.currency,
           amount: this.formDialog.data.amount,
           description: this.formDialog.data.description,
           remembers: this.formDialog.data.remembers,
@@ -208,5 +216,16 @@ window.app = Vue.createApp({
     if (this.g.user.wallets.length) {
       this.getPaywalls()
     }
+    LNbits.api
+      .request('GET', '/api/v1/currencies')
+      .then(response => {
+        this.currencyOptions = ['sat', ...response.data]
+        if (LNBITS_DENOMINATION != 'sats') {
+          this.formDialog.data.currency = LNBITS_DENOMINATION
+        }
+      })
+      .catch(err => {
+        LNbits.utils.notifyApiError(err)
+      })
   }
 })
