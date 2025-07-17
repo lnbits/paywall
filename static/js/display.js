@@ -5,6 +5,7 @@ window.app = Vue.createApp({
     return {
       userAmount: paywall.amount,
       paywallAmount: paywall.amount,
+      paywallCurrency: paywall.currency,
       paywallMemo: paywall.memo,
       paywallDescription: paywall.description,
       paymentReq: null,
@@ -20,12 +21,18 @@ window.app = Vue.createApp({
       return this.paywallAmount > this.userAmount
         ? this.paywallAmount
         : this.userAmount
+    },
+    formattedAmount() {
+      if (this.paywallCurrency == 'sat') {
+        return LNbits.utils.formatSat(this.amount) + ' sats'
+      } else {
+        return LNbits.utils.formatCurrency(Number(this.amount).toFixed(2), this.paywallCurrency)
+      }
     }
   },
   methods: {
     cancelPayment() {
       this.paymentReq = null
-      clearInterval(this.paymentDialog.checker)
       if (this.paymentDialog.dismissMsg) {
         this.paymentDialog.dismissMsg()
       }
@@ -47,40 +54,51 @@ window.app = Vue.createApp({
               timeout: 0,
               message: 'Waiting for payment...'
             })
-
-            this.paymentDialog.checker = setInterval(() => {
-              LNbits.api
-                .request(
-                  'POST',
-                  `/paywall/api/v1/paywalls/check_invoice/${paywall.id}`,
-                  'filler',
-                  {payment_hash: response.data.payment_hash}
-                )
-                .then(response => {
-                  if (response.data) {
-                    if (response.data.paid) {
-                      this.cancelPayment()
-                      this.redirectUrl = response.data.url
-                      if (response.data.remembers) {
-                        this.$q.localStorage.set(
-                          `lnbits.paywall.${paywall.id}`,
-                          response.data.url
-                        )
-                      }
-                      Quasar.Notify.create({
-                        type: 'positive',
-                        message: 'Payment received!',
-                        icon: null
-                      })
-                    }
-                  }
-                })
-                .catch(LNbits.utils.notifyApiError)
-            }, 2000)
+            this.subscribeToPaymentWS(response.data.payment_hash)
           }
         })
         .catch(LNbits.utils.notifyApiError)
-    }
+    },
+    async getPaidPaywallData(paymentHash) {
+      const {data} = await LNbits.api.request(
+        'POST',
+        `/paywall/api/v1/paywalls/check_invoice/${paywall.id}`,
+        'filler',
+        {payment_hash: paymentHash}
+      )
+      if (data && data.paid) {
+        this.cancelPayment()
+        this.redirectUrl = data.url
+        if (data.remembers) {
+          this.$q.localStorage.set(
+            `lnbits.paywall.${paywall.id}`,
+            data.url
+          )
+        }
+      }
+    },
+    subscribeToPaymentWS(paymentHash) {
+      try {
+        const url = new URL(window.location)
+        url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
+        url.pathname = `/api/v1/ws/${paymentHash}`
+        const ws = new WebSocket(url)
+        ws.onmessage = async ({data}) => {
+          const payment = JSON.parse(data)
+          if (payment.pending === false) {
+            Quasar.Notify.create({
+              type: 'positive',
+              message: 'Invoice Paid!'
+            })
+            this.getPaidPaywallData(paymentHash)
+            ws.close()
+          }
+        }
+      } catch (err) {
+        console.warn(err)
+        LNbits.utils.notifyApiError(err)
+      }
+    },
   },
   created() {
     const url = this.$q.localStorage.getItem(`lnbits.paywall.${paywall.id}`)

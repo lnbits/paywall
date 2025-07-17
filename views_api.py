@@ -15,6 +15,8 @@ from fastapi import (
 )
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
+from loguru import logger
+
 from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import check_transaction_status, create_invoice
@@ -22,7 +24,7 @@ from lnbits.decorators import (
     require_admin_key,
     require_invoice_key,
 )
-from loguru import logger
+from lnbits.utils.exchange_rates import fiat_amount_as_satoshis
 
 from .crud import (
     create_paywall,
@@ -107,7 +109,13 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
         )
-    return await _create_paywall_invoice(paywall, data.amount)
+    amount = int(data.amount)
+    if paywall.currency != "sat":
+        amount = await fiat_amount_as_satoshis(
+            amount=data.amount,
+            currency=paywall.currency,
+        )
+    return await _create_paywall_invoice(paywall, amount)
 
 
 @paywall_api_router.get("/api/v1/paywalls/invoice/{paywall_id}")
@@ -266,14 +274,22 @@ async def _file_streamer(url, headers):
 
 
 async def _create_paywall_invoice(paywall: Paywall, amount: int):
-    if amount < paywall.amount:
+    min_amount_sats = paywall.amount
+    if paywall.currency != "sat":
+        min_amount_sats = await fiat_amount_as_satoshis(
+            amount=paywall.amount,
+            currency=paywall.currency,
+        )
+
+    if amount < min_amount_sats:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail=f"Minimum amount is {paywall.amount} sat.",
+            detail=f"Minimum amount is {paywall.amount} {paywall.currency}.",
         )
+
     payment = await create_invoice(
         wallet_id=paywall.wallet,
-        amount=max(amount, paywall.amount),
+        amount=max(amount, min_amount_sats),
         memo=f"{paywall.memo}",
         extra={"tag": "paywall", "id": paywall.id},
     )

@@ -23,13 +23,14 @@ class CreatePaywall(BaseModel):
     url: str = Query(...)
     memo: str = Query(...)
     description: str = Query(None)
-    amount: int = Query(..., ge=0)
+    amount: float = Query(..., ge=0)
+    currency: Optional[str] = "sat"
     remembers: bool = Query(...)
     extras: Optional[PaywallExtra] = None
 
 
 class CreatePaywallInvoice(BaseModel):
-    amount: int = Query(..., ge=1)
+    amount: float = Query(..., ge=0)
 
 
 class CheckPaywallInvoice(BaseModel):
@@ -42,7 +43,8 @@ class Paywall(BaseModel):
     url: str
     memo: str
     description: Optional[str]
-    amount: int
+    amount: float
+    currency: str
     remembers: bool
     time: datetime = datetime.now(timezone.utc)
     extras: Optional[PaywallExtra] = PaywallExtra()
