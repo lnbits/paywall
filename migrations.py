@@ -81,7 +81,17 @@ async def m003_add_fiat_amount(db: Connection):
     await db.execute(
         """
         INSERT INTO paywall.paywalls
-        SELECT id, wallet, url, memo, description, amount, 'sat', time, remembers, extras
+        SELECT
+            id,
+            wallet,
+            url,
+            memo,
+            description,
+            amount,
+            'sat',
+            time,
+            remembers,
+            extras
         FROM paywall.paywalls_m002
         """
     )

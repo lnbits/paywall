@@ -26,7 +26,10 @@ window.app = Vue.createApp({
       if (this.paywallCurrency == 'sat') {
         return LNbits.utils.formatSat(this.amount) + ' sats'
       } else {
-        return LNbits.utils.formatCurrency(Number(this.amount).toFixed(2), this.paywallCurrency)
+        return LNbits.utils.formatCurrency(
+          Number(this.amount).toFixed(2),
+          this.paywallCurrency
+        )
       }
     }
   },
@@ -70,10 +73,7 @@ window.app = Vue.createApp({
         this.cancelPayment()
         this.redirectUrl = data.url
         if (data.remembers) {
-          this.$q.localStorage.set(
-            `lnbits.paywall.${paywall.id}`,
-            data.url
-          )
+          this.$q.localStorage.set(`lnbits.paywall.${paywall.id}`, data.url)
         }
       }
     },
@@ -98,7 +98,7 @@ window.app = Vue.createApp({
         console.warn(err)
         LNbits.utils.notifyApiError(err)
       }
-    },
+    }
   },
   created() {
     const url = this.$q.localStorage.getItem(`lnbits.paywall.${paywall.id}`)

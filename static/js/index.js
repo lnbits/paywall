@@ -23,8 +23,13 @@ window.app = Vue.createApp({
       paywallsTable: {
         columns: [
           {name: 'id', align: 'left', label: 'ID', field: 'id'},
-          { name: 'memo', align: 'left', label: 'Memo', field: 'memo' },
-          {name: 'currency', align: 'left', label: 'Currency', field: 'currency'},
+          {name: 'memo', align: 'left', label: 'Memo', field: 'memo'},
+          {
+            name: 'currency',
+            align: 'left',
+            label: 'Currency',
+            field: 'currency'
+          },
           {
             name: 'amount',
             align: 'right',
@@ -62,7 +67,7 @@ window.app = Vue.createApp({
         {id: 'url', label: 'Redirect URL'},
         {id: 'file', label: 'File Download'}
       ],
-      currencyOptions: [],
+      currencyOptions: []
     }
   },
   computed: {
