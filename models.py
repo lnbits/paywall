@@ -37,7 +37,7 @@ class CheckPaywallInvoice(BaseModel):
     payment_hash: str = Query(...)
 
 
-class Paywall(BaseModel):
+class PublicPaywall(BaseModel):
     id: str
     wallet: str
     url: str
@@ -47,4 +47,7 @@ class Paywall(BaseModel):
     currency: str
     remembers: bool
     time: datetime = datetime.now(timezone.utc)
+
+
+class Paywall(PublicPaywall):
     extras: Optional[PaywallExtra] = PaywallExtra()
