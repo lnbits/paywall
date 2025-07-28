@@ -8,6 +8,7 @@ from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
 
 from .crud import get_paywall
+from .models import PublicPaywall
 
 paywall_generic_router = APIRouter()
 
@@ -30,6 +31,7 @@ async def display(request: Request, paywall_id: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
         )
+    public_paywall = PublicPaywall(**paywall.dict())
     return paywall_renderer().TemplateResponse(
-        "paywall/display.html", {"request": request, "paywall": paywall.json()}
+        "paywall/display.html", {"request": request, "paywall": public_paywall.json()}
     )
