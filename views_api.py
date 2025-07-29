@@ -15,8 +15,6 @@ from fastapi import (
 )
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
-from loguru import logger
-
 from lnbits.core.crud import get_standalone_payment, get_user
 from lnbits.core.models import CreateInvoice, WalletTypeInfo
 from lnbits.core.services import (
@@ -29,6 +27,7 @@ from lnbits.decorators import (
     require_invoice_key,
 )
 from lnbits.utils.exchange_rates import fiat_amount_as_satoshis
+from loguru import logger
 
 from .crud import (
     create_paywall,
@@ -116,7 +115,10 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
     if data.pay_in_fiat and paywall.currency == "sat":
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
-            detail="Cannot create invoice for paywall with fiat provider and currency 'sat'.",
+            detail=(
+                "Cannot create invoice for paywall with fiat provider and "
+                "currency 'sat'."
+            ),
         )
 
     try:

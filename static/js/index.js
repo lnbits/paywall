@@ -75,7 +75,7 @@ window.app = Vue.createApp({
         {id: 'file', label: 'File Download'}
       ],
       currencyOptions: [],
-      fiatProviders: [],
+      fiatProviders: []
     }
   },
   computed: {

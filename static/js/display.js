@@ -66,12 +66,16 @@ window.app = Vue.createApp({
           'filler',
           {
             amount: this.amount,
-            pay_in_fiat: fiat,
+            pay_in_fiat: fiat
           }
         )
         .then(response => {
           if (response.data) {
-            const { payment_hash, bolt11, extra: { fiat_payment_request } } = response.data
+            const {
+              payment_hash,
+              bolt11,
+              extra: {fiat_payment_request}
+            } = response.data
             if (fiat && fiat_payment_request) {
               this.paymentReq = fiat_payment_request
             } else {
