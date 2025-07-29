@@ -21,16 +21,26 @@
               <q-btn
                 unelevated
                 color="primary"
-                :disabled="userAmount < paywallAmount || paymentReq"
-                @click="createInvoice"
-                >Send</q-btn
+                :disabled="userAmount < paywallAmount || paymentReq || loading"
+                @click="createInvoice()"
+                >Pay</q-btn
+              >
+              <q-btn
+                v-if="paywallFiat"
+                unelevated
+                outline
+                class="q-ml-sm"
+                color="primary"
+                :disabled="userAmount < paywallAmount || paymentReq || loading"
+                @click="createInvoice(true)"
+                >Pay in fiat</q-btn
               >
             </div>
           </q-form>
           <div v-if="paymentReq" class="q-mt-lg">
-            <a class="text-secondary" :href="'lightning:' + paymentReq">
+            <a class="text-secondary" :href="paymentReq" target="_blank" rel="noopener noreferrer">
               <lnbits-qrcode
-                :value="'lightning:' + paymentReq.toUpperCase()"
+                :value="paymentReq"
                 class="rounded-borders"
               ></lnbits-qrcode>
             </a>
