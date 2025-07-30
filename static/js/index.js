@@ -41,6 +41,13 @@ window.app = Vue.createApp({
             }
           },
           {
+            name: 'fiat_provider',
+            align: 'left',
+            label: 'Fiat Provider',
+            field: 'fiat_provider',
+            format: val => val && val.charAt(0).toUpperCase() + val.slice(1)
+          },
+          {
             name: 'remembers',
             align: 'left',
             label: 'Remember',
@@ -67,7 +74,8 @@ window.app = Vue.createApp({
         {id: 'url', label: 'Redirect URL'},
         {id: 'file', label: 'File Download'}
       ],
-      currencyOptions: []
+      currencyOptions: [],
+      fiatProviders: []
     }
   },
   computed: {
@@ -135,6 +143,7 @@ window.app = Vue.createApp({
           memo: this.formDialog.data.memo,
           currency: this.formDialog.data.currency,
           amount: this.formDialog.data.amount,
+          fiat_provider: this.formDialog.data.fiat_provider || null,
           description: this.formDialog.data.description,
           remembers: this.formDialog.data.remembers,
           extras: this.extras
@@ -227,5 +236,8 @@ window.app = Vue.createApp({
       .catch(err => {
         LNbits.utils.notifyApiError(err)
       })
+    if (this.g.user.fiat_providers && this.g.user.fiat_providers.length > 0) {
+      this.fiatProviders = [...this.g.user.fiat_providers]
+    }
   }
 })

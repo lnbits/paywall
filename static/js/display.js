@@ -8,12 +8,14 @@ window.app = Vue.createApp({
       paywallCurrency: paywall.currency,
       paywallMemo: paywall.memo,
       paywallDescription: paywall.description,
+      paywallFiat: paywall.fiat_provider,
       paymentReq: null,
       redirectUrl: null,
       paymentDialog: {
         dismissMsg: null,
         checker: null
-      }
+      },
+      loading: false
     }
   },
   computed: {
@@ -40,27 +42,56 @@ window.app = Vue.createApp({
         this.paymentDialog.dismissMsg()
       }
     },
-    createInvoice() {
+    createInvoice(fiat = false) {
+      if (this.loading) return
+      this.loading = true
+      if (fiat && !this.paywallFiat) {
+        Quasar.Notify.create({
+          type: 'negative',
+          message: 'Fiat payments are not supported for this paywall.'
+        })
+        return
+      }
+      if (fiat && this.paywallCurrency == 'sat') {
+        Quasar.Notify.create({
+          type: 'negative',
+          message: 'This paywall is set to sats, cannot create fiat invoice.'
+        })
+        return
+      }
       LNbits.api
         .request(
           'POST',
           `/paywall/api/v1/paywalls/invoice/${paywall.id}`,
           'filler',
           {
-            amount: this.amount
+            amount: this.amount,
+            pay_in_fiat: fiat
           }
         )
         .then(response => {
           if (response.data) {
-            this.paymentReq = response.data.payment_request.toUpperCase()
+            const {
+              payment_hash,
+              bolt11,
+              extra: {fiat_payment_request}
+            } = response.data
+            if (fiat && fiat_payment_request) {
+              this.paymentReq = fiat_payment_request
+            } else {
+              this.paymentReq = `lightning:${bolt11.toUpperCase()}`
+            }
             this.paymentDialog.dismissMsg = Quasar.Notify.create({
               timeout: 0,
               message: 'Waiting for payment...'
             })
-            this.subscribeToPaymentWS(response.data.payment_hash)
+            this.subscribeToPaymentWS(payment_hash)
           }
         })
         .catch(LNbits.utils.notifyApiError)
+        .finally(() => {
+          this.loading = false
+        })
     },
     async getPaidPaywallData(paymentHash) {
       const {data} = await LNbits.api.request(

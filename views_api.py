@@ -16,8 +16,12 @@ from fastapi import (
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 from lnbits.core.crud import get_standalone_payment, get_user
-from lnbits.core.models import WalletTypeInfo
-from lnbits.core.services import check_transaction_status, create_invoice
+from lnbits.core.models import CreateInvoice, WalletTypeInfo
+from lnbits.core.services import (
+    check_transaction_status,
+    create_invoice,
+    create_payment_request,
+)
 from lnbits.decorators import (
     require_admin_key,
     require_invoice_key,
@@ -108,13 +112,45 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
         )
-    amount = int(data.amount)
-    if paywall.currency != "sat":
-        amount = await fiat_amount_as_satoshis(
-            amount=data.amount,
-            currency=paywall.currency,
+    if data.pay_in_fiat and paywall.currency == "sat":
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=(
+                "Cannot create invoice for paywall with fiat provider and "
+                "currency 'sat'."
+            ),
         )
-    return await _create_paywall_invoice(paywall, amount)
+
+    try:
+        invoice_data = CreateInvoice(
+            unit=paywall.currency,
+            out=False,
+            amount=data.amount,
+            memo=paywall.memo,
+            extra={
+                "tag": "paywall",
+                "id": paywall.id,
+            },
+            fiat_provider=paywall.fiat_provider if data.pay_in_fiat else None,
+        )
+
+        return await create_payment_request(
+            wallet_id=paywall.wallet,
+            invoice_data=invoice_data,
+        )
+    except Exception as exc:
+        logger.error(f"Error creating invoice for paywall {paywall_id}: {exc}")
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
+
+    # amount = int(data.amount)
+    # if paywall.currency != "sat":
+    #     amount = await fiat_amount_as_satoshis(
+    #         amount=data.amount,
+    #         currency=paywall.currency,
+    #     )
+    # return await _create_paywall_invoice(paywall, amount)
 
 
 @paywall_api_router.get("/api/v1/paywalls/invoice/{paywall_id}")

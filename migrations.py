@@ -96,3 +96,10 @@ async def m003_add_fiat_amount(db: Connection):
         """
     )
     await db.execute("DROP TABLE paywall.paywalls_m002")
+
+
+async def m004_add_fiat_provider(db: Connection):
+    """
+    Add fiat_provider to paywalls to allow different fiat payment providers.
+    """
+    await db.execute("ALTER TABLE paywall.paywalls ADD COLUMN fiat_provider TEXT NULL")

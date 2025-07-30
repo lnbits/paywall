@@ -25,12 +25,14 @@ class CreatePaywall(BaseModel):
     description: str = Query(None)
     amount: float = Query(..., ge=0)
     currency: Optional[str] = "sat"
+    fiat_provider: Optional[str] = None
     remembers: bool = Query(...)
     extras: Optional[PaywallExtra] = None
 
 
 class CreatePaywallInvoice(BaseModel):
     amount: float = Query(..., ge=0)
+    pay_in_fiat: bool = Query(False)
 
 
 class CheckPaywallInvoice(BaseModel):
@@ -45,6 +47,7 @@ class PublicPaywall(BaseModel):
     description: Optional[str]
     amount: float
     currency: str
+    fiat_provider: Optional[str] = None
     remembers: bool
     time: datetime = datetime.now(timezone.utc)
 
