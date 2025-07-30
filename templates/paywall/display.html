@@ -24,8 +24,7 @@
                 :disabled="userAmount < paywallAmount || paymentReq || loading"
                 @click="createInvoice()"
                 :label=" paywallFiat ? 'Pay in sats' : 'Pay' "
-                ></q-btn
-              >
+              ></q-btn>
               <q-btn
                 v-if="paywallFiat"
                 unelevated
