@@ -46,6 +46,7 @@ window.app = Vue.createApp({
       if (this.loading) return
       this.loading = true
       if (fiat && !this.paywallFiat) {
+        this.loading = false
         Quasar.Notify.create({
           type: 'negative',
           message: 'Fiat payments are not supported for this paywall.'
@@ -53,6 +54,7 @@ window.app = Vue.createApp({
         return
       }
       if (fiat && this.paywallCurrency == 'sat') {
+        this.loading = false
         Quasar.Notify.create({
           type: 'negative',
           message: 'This paywall is set to sats, cannot create fiat invoice.'
