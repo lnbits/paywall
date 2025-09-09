@@ -41,17 +41,10 @@
             </div>
           </q-form>
           <div v-if="paymentReq" class="q-mt-lg">
-            <a
-              class="text-secondary"
+            <lnbits-qrcode
+              :value="paymentReq"
               :href="paymentReq"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <lnbits-qrcode
-                :value="paymentReq"
-                class="rounded-borders"
-              ></lnbits-qrcode>
-            </a>
+            ></lnbits-qrcode>
             <div class="row q-mt-lg">
               <q-btn outline color="grey" @click="copyText(paymentReq)"
                 >Copy invoice</q-btn
