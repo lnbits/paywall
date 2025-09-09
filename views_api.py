@@ -1,7 +1,6 @@
 import json
 from asyncio import Queue
 from http import HTTPStatus
-from typing import Optional
 from urllib import request
 
 from fastapi import (
@@ -147,7 +146,7 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
 
 @paywall_api_router.get("/api/v1/paywalls/invoice/{paywall_id}")
 async def api_paywall_create_fixed_amount_invoice(
-    paywall_id: str, amount: Optional[int] = None
+    paywall_id: str, amount: int | None = None
 ):
     paywall = await get_paywall(paywall_id)
     if not paywall:
@@ -223,7 +222,7 @@ async def websocket_connect(ws: WebSocket, paywall_id: str, payment_hash: str) -
 
 @paywall_api_router.get("/download/{paywall_id}")
 async def api_paywall_download_file(
-    paywall_id: str, version: Optional[str] = None, payment_hash: Optional[str] = None
+    paywall_id: str, version: str | None = None, payment_hash: str | None = None
 ):
     try:
         logger.info(f"Prepare download for paywall '{paywall_id}'.")
@@ -265,7 +264,7 @@ async def api_paywall_download_file(
 
 
 @paywall_api_router.head("/download/{paywall_id}")
-async def api_paywall_check_file(paywall_id: str, payment_hash: Optional[str] = None):
+async def api_paywall_check_file(paywall_id: str, payment_hash: str | None = None):
     try:
         assert payment_hash, "Payment hash is missing."
 
