@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
@@ -24,7 +22,7 @@ async def update_paywall(paywall: Paywall) -> Paywall:
     return paywall
 
 
-async def get_paywall(paywall_id: str) -> Optional[Paywall]:
+async def get_paywall(paywall_id: str) -> Paywall | None:
     return await db.fetchone(
         "SELECT * FROM paywall.paywalls WHERE id = :id",
         {"id": paywall_id},
@@ -32,7 +30,7 @@ async def get_paywall(paywall_id: str) -> Optional[Paywall]:
     )
 
 
-async def get_paywalls(wallet_ids: Union[str, list[str]]) -> list[Paywall]:
+async def get_paywalls(wallet_ids: str | list[str]) -> list[Paywall]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
     q = ",".join([f"'{wallet_id}'" for wallet_id in wallet_ids])

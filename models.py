@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 from fastapi import Query
 from pydantic import BaseModel
@@ -15,8 +14,8 @@ class PaywallFileConfig(BaseModel):
 
 class PaywallExtra(BaseModel):
     # possible types: 'url' and 'file'
-    type: Optional[str] = "url"
-    file_config: Optional[PaywallFileConfig] = None
+    type: str | None = "url"
+    file_config: PaywallFileConfig | None = None
 
 
 class CreatePaywall(BaseModel):
@@ -24,13 +23,15 @@ class CreatePaywall(BaseModel):
     memo: str = Query(...)
     description: str = Query(None)
     amount: float = Query(..., ge=0)
-    currency: Optional[str] = "sat"
+    currency: str | None = "sat"
+    fiat_provider: str | None = None
     remembers: bool = Query(...)
-    extras: Optional[PaywallExtra] = None
+    extras: PaywallExtra | None = None
 
 
 class CreatePaywallInvoice(BaseModel):
     amount: float = Query(..., ge=0)
+    pay_in_fiat: bool = Query(False)
 
 
 class CheckPaywallInvoice(BaseModel):
@@ -42,12 +43,13 @@ class PublicPaywall(BaseModel):
     wallet: str
     url: str
     memo: str
-    description: Optional[str]
+    description: str | None
     amount: float
     currency: str
+    fiat_provider: str | None = None
     remembers: bool
     time: datetime = datetime.now(timezone.utc)
 
 
 class Paywall(PublicPaywall):
-    extras: Optional[PaywallExtra] = PaywallExtra()
+    extras: PaywallExtra | None = PaywallExtra()

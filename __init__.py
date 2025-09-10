@@ -35,4 +35,4 @@ def paywall_start():
     scheduled_tasks.append(task)
 
 
-__all__ = ["db", "paywall_ext", "paywall_static_files", "paywall_start", "paywall_stop"]
+__all__ = ["db", "paywall_ext", "paywall_start", "paywall_static_files", "paywall_stop"]
