@@ -1,3 +1,10 @@
-Hide content behind a paywall, a user has to pay some amount to access your hidden content.
+Hide content behind a paywall that users must pay to access.
 
-A Paywall is a way of restricting to content via a purchase or paid subscription. For example to read a determined blog post, or to continue reading further, to access a downloads area, etc...
+Its functions include:
+
+- Restricting access to articles, downloads, or media
+- Setting custom prices for different content
+- Generating shareable payment links
+- Automatically unlocking content after payment
+
+Perfect for writers, educators, and content creators who want to monetize digital content with instant Bitcoin micropayments.

@@ -1,6 +1,10 @@
 {
+  "id": "paywall",
+  "version": "1.2.0",
   "name": "Paywall",
+  "repo": "https://github.com/lnbits/paywall",
   "short_description": "Create paywalls for content",
+  "description": "",
   "tile": "/paywall/static/image/paywall.png",
   "min_lnbits_version": "1.3.0",
   "contributors": [
@@ -12,7 +16,7 @@
   ],
   "images": [
     {
-      "uri": "https://raw.githubusercontent.com/lnbits/paywall/main/static/image/1.jpg",
+      "uri": "https://raw.githubusercontent.com/lnbits/paywall/main/static/image/Paywall_thumbnail.png",
       "link": "https://www.youtube.com/embed/N0fU_0gbaXs?si=ijsKN4IbQcH2vVkI"
     },
     {
@@ -24,5 +28,9 @@
   ],
   "description_md": "https://raw.githubusercontent.com/lnbits/paywall/main/description.md",
   "terms_and_conditions_md": "https://raw.githubusercontent.com/lnbits/paywall/main/toc.md",
-  "license": "MIT"
+  "license": "MIT",
+  "paid_features": "",
+  "tags": ["Creators", "Monetization"],
+  "donate": "",
+  "hidden": false
 }
