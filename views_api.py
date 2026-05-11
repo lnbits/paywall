@@ -35,7 +35,13 @@ from .crud import (
     get_paywalls,
     update_paywall,
 )
-from .models import CheckPaywallInvoice, CreatePaywall, CreatePaywallInvoice, Paywall
+from .models import (
+    CheckPaywallInvoice,
+    CreatePaywall,
+    CreatePaywallInvoice,
+    Paywall,
+    PublicPaywallPage,
+)
 from .tasks import paid_invoices
 
 paywall_api_router = APIRouter()
@@ -53,6 +59,16 @@ async def api_paywalls(
         wallet_ids = user.wallet_ids if user else []
 
     return await get_paywalls(wallet_ids)
+
+
+@paywall_api_router.get("/api/v1/paywalls/{paywall_id}")
+async def api_paywall(paywall_id: str) -> PublicPaywallPage:
+    paywall = await get_paywall(paywall_id)
+    if not paywall:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Paywall does not exist."
+        )
+    return PublicPaywallPage(**paywall.dict())
 
 
 @paywall_api_router.post("/api/v1/paywalls")

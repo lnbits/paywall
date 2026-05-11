@@ -31,8 +31,7 @@ async def m002_redux(db: Connection):
     """
     await db.execute("ALTER TABLE paywall.paywalls RENAME TO paywalls_m001")
 
-    await db.execute(
-        f"""
+    await db.execute(f"""
         CREATE TABLE paywall.paywalls (
             id TEXT PRIMARY KEY,
             wallet TEXT NOT NULL,
@@ -44,16 +43,13 @@ async def m002_redux(db: Connection):
             remembers INTEGER DEFAULT 0,
             extras TEXT NULL
         );
-        """
-    )
+        """)
 
-    await db.execute(
-        """
+    await db.execute("""
         INSERT INTO paywall.paywalls
         SELECT id, wallet, url, memo, NULL, amount, time, 0, NULL
         FROM paywall.paywalls_m001
-        """
-    )
+        """)
     await db.execute("DROP TABLE paywall.paywalls_m001")
 
 
@@ -62,8 +58,7 @@ async def m003_add_fiat_amount(db: Connection):
     Add currency to paywalls to allow fiat denomination and make amount a float.
     """
     await db.execute("ALTER TABLE paywall.paywalls RENAME TO paywalls_m002")
-    await db.execute(
-        f"""
+    await db.execute(f"""
         CREATE TABLE paywall.paywalls (
             id TEXT PRIMARY KEY,
             wallet TEXT NOT NULL,
@@ -76,10 +71,8 @@ async def m003_add_fiat_amount(db: Connection):
             remembers INTEGER DEFAULT 0,
             extras TEXT NULL
         );
-        """
-    )
-    await db.execute(
-        """
+        """)
+    await db.execute("""
         INSERT INTO paywall.paywalls
         SELECT
             id,
@@ -93,8 +86,7 @@ async def m003_add_fiat_amount(db: Connection):
             remembers,
             extras
         FROM paywall.paywalls_m002
-        """
-    )
+        """)
     await db.execute("DROP TABLE paywall.paywalls_m002")
 
 

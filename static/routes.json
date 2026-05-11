@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/paywall/",
+    "name": "PagePaywall",
+    "template": "/paywall/static/js/index.vue",
+    "component": "/paywall/static/js/index.js"
+  },
+  {
+    "path": "/paywall/:id",
+    "name": "PagePaywallDisplay",
+    "template": "/paywall/static/js/display.vue",
+    "component": "/paywall/static/js/display.js"
+  }
+]

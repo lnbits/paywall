@@ -14,9 +14,8 @@ const mapPaywall = obj => {
   return obj
 }
 
-window.app = Vue.createApp({
-  el: '#vue',
-  mixins: [windowMixin],
+window.PagePaywall = {
+  template: '#page-paywall',
   data() {
     return {
       paywalls: [],
@@ -79,6 +78,9 @@ window.app = Vue.createApp({
     }
   },
   computed: {
+    apiBaseUrl() {
+      return window.location.origin + '/'
+    },
     extras() {
       const type = this.formDialog.data.type.id
       let file_config = null
@@ -222,22 +224,17 @@ window.app = Vue.createApp({
     }
   },
   created() {
+    this.formDialog.data = this.emptyPaywall()
     if (this.g.user.wallets.length) {
       this.getPaywalls()
     }
-    LNbits.api
-      .request('GET', '/api/v1/currencies')
-      .then(response => {
-        this.currencyOptions = ['sat', ...response.data]
-        if (LNBITS_DENOMINATION != 'sats') {
-          this.formDialog.data.currency = LNBITS_DENOMINATION
-        }
-      })
-      .catch(err => {
-        LNbits.utils.notifyApiError(err)
-      })
+    const currencies = this.g.allowedCurrencies || this.g.currencies || []
+    this.currencyOptions = Array.from(new Set(['sat', ...currencies]))
+    if (LNBITS_DENOMINATION != 'sats') {
+      this.formDialog.data.currency = LNBITS_DENOMINATION
+    }
     if (this.g.user.fiat_providers && this.g.user.fiat_providers.length > 0) {
       this.fiatProviders = [...this.g.user.fiat_providers]
     }
   }
-})
+}
