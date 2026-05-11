@@ -1,19 +1,21 @@
-window.app = Vue.createApp({
-  el: '#vue',
-  mixins: [windowMixin],
+window.PagePaywallDisplay = {
+  template: '#page-paywall-display',
   data() {
     return {
-      userAmount: paywall.amount,
-      paywallAmount: paywall.amount,
-      paywallCurrency: paywall.currency,
-      paywallMemo: paywall.memo,
-      paywallDescription: paywall.description,
-      paywallFiat: paywall.fiat_provider,
+      paywall: null,
+      userAmount: 0,
+      paywallAmount: 0,
+      paywallCurrency: 'sat',
+      paywallMemo: '',
+      paywallDescription: '',
+      paywallFiat: null,
+      paywallErrorLabel: '',
       paymentReq: null,
       redirectUrl: null,
       paymentDialog: {
         dismissMsg: null,
-        checker: null
+        checker: null,
+        websocket: null
       },
       loading: false
     }
@@ -40,6 +42,11 @@ window.app = Vue.createApp({
       this.paymentReq = null
       if (this.paymentDialog.dismissMsg) {
         this.paymentDialog.dismissMsg()
+        this.paymentDialog.dismissMsg = null
+      }
+      if (this.paymentDialog.websocket) {
+        this.paymentDialog.websocket.close()
+        this.paymentDialog.websocket = null
       }
     },
     createInvoice(fiat = false) {
@@ -64,7 +71,7 @@ window.app = Vue.createApp({
       LNbits.api
         .request(
           'POST',
-          `/paywall/api/v1/paywalls/invoice/${paywall.id}`,
+          `/paywall/api/v1/paywalls/invoice/${this.paywall.id}`,
           'filler',
           {
             amount: this.amount,
@@ -98,7 +105,7 @@ window.app = Vue.createApp({
     async getPaidPaywallData(paymentHash) {
       const {data} = await LNbits.api.request(
         'POST',
-        `/paywall/api/v1/paywalls/check_invoice/${paywall.id}`,
+        `/paywall/api/v1/paywalls/check_invoice/${this.paywall.id}`,
         'filler',
         {payment_hash: paymentHash}
       )
@@ -106,16 +113,23 @@ window.app = Vue.createApp({
         this.cancelPayment()
         this.redirectUrl = data.url
         if (data.remembers) {
-          this.$q.localStorage.set(`lnbits.paywall.${paywall.id}`, data.url)
+          this.$q.localStorage.set(
+            `lnbits.paywall.${this.paywall.id}`,
+            data.url
+          )
         }
       }
     },
     subscribeToPaymentWS(paymentHash) {
       try {
+        if (this.paymentDialog.websocket) {
+          this.paymentDialog.websocket.close()
+        }
         const url = new URL(window.location)
         url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
         url.pathname = `/api/v1/ws/${paymentHash}`
         const ws = new WebSocket(url)
+        this.paymentDialog.websocket = ws
         ws.onmessage = async ({data}) => {
           const payment = JSON.parse(data)
           if (payment.pending === false) {
@@ -125,18 +139,44 @@ window.app = Vue.createApp({
             })
             this.getPaidPaywallData(paymentHash)
             ws.close()
+            this.paymentDialog.websocket = null
           }
         }
       } catch (err) {
         console.warn(err)
         LNbits.utils.notifyApiError(err)
       }
+    },
+    async getPaywall() {
+      let data
+      try {
+        const response = await LNbits.api.request(
+          'GET',
+          `/paywall/api/v1/paywalls/${this.$route.params.id}`
+        )
+        data = response.data
+      } catch (error) {
+        this.paywallErrorLabel = 'Paywall unavailable.'
+        LNbits.utils.notifyApiError(error)
+        return
+      }
+      this.paywall = data
+      this.userAmount = data.amount
+      this.paywallAmount = data.amount
+      this.paywallCurrency = data.currency
+      this.paywallMemo = data.memo
+      this.paywallDescription = data.description
+      this.paywallFiat = data.fiat_provider
     }
   },
-  created() {
-    const url = this.$q.localStorage.getItem(`lnbits.paywall.${paywall.id}`)
+  async created() {
+    await this.getPaywall()
+    if (!this.paywall) return
+    const url = this.$q.localStorage.getItem(
+      `lnbits.paywall.${this.paywall.id}`
+    )
     if (url) {
       this.redirectUrl = url
     }
   }
-})
+}

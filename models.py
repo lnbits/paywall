@@ -53,3 +53,12 @@ class PublicPaywall(BaseModel):
 
 class Paywall(PublicPaywall):
     extras: PaywallExtra | None = PaywallExtra()
+
+
+class PublicPaywallPage(BaseModel):
+    id: str
+    memo: str
+    description: str | None
+    amount: float
+    currency: str
+    fiat_provider: str | None = None

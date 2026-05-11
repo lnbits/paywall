@@ -2,3 +2,11 @@ __pycache__
 node_modules
 .mypy_cache
 .venv
+data/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+test-reports/
+.coverage
+.coverage.*
+coverage.xml
