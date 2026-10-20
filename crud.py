@@ -11,7 +11,7 @@ async def create_paywall(wallet_id: str, data: CreatePaywall) -> Paywall:
     paywall = Paywall(
         id=paywall_id,
         wallet=wallet_id,
-        **data.dict(),
+        **data.model_dump(),
     )
     await db.insert("paywall.paywalls", paywall)
     return paywall
