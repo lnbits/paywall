@@ -21,7 +21,7 @@ class PaywallExtra(BaseModel):
 class CreatePaywall(BaseModel):
     url: str = Query(...)
     memo: str = Query(...)
-    description: str = Query(None)
+    description: str | None = Query(None)
     amount: float = Query(..., ge=0)
     currency: str | None = "sat"
     fiat_provider: str | None = None
@@ -43,7 +43,7 @@ class PublicPaywall(BaseModel):
     wallet: str
     url: str
     memo: str
-    description: str | None
+    description: str | None = None
     amount: float
     currency: str
     fiat_provider: str | None = None

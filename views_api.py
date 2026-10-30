@@ -79,7 +79,7 @@ async def api_paywall_update(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your paywall."
         )
-    for k, v in data.dict().items():
+    for k, v in data.model_dump().items():
         setattr(paywall, k, v)
     await update_paywall(paywall)
     return paywall
