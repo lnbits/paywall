@@ -1,7 +1,6 @@
 import json
 from asyncio import Queue
 from http import HTTPStatus
-from urllib import request
 
 from fastapi import (
     APIRouter,
@@ -15,7 +14,7 @@ from fastapi import (
 from fastapi.exceptions import HTTPException
 from fastapi.responses import StreamingResponse
 from lnbits.core.crud import get_standalone_payment, get_user
-from lnbits.core.models import CreateInvoice, WalletTypeInfo
+from lnbits.core.models import CreateInvoice, KeyType, WalletTypeInfo
 from lnbits.core.services import (
     check_transaction_status,
     create_invoice,
@@ -26,6 +25,7 @@ from lnbits.decorators import (
     require_invoice_key,
 )
 from lnbits.utils.exchange_rates import fiat_amount_as_satoshis
+from lnbits.utils.safe_http import SafeHttpClient, validate_url
 from loguru import logger
 
 from .crud import (
@@ -52,7 +52,13 @@ async def api_paywalls(
         user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
 
-    return await get_paywalls(wallet_ids)
+    paywalls = await get_paywalls(wallet_ids)
+    if wallet.key_type != KeyType.admin:
+        paywalls = [paywall.model_copy(deep=True) for paywall in paywalls]
+        for paywall in paywalls:
+            if paywall.extras and paywall.extras.file_config:
+                paywall.extras.file_config.headers = {}
+    return paywalls
 
 
 @paywall_api_router.post("/api/v1/paywalls")
@@ -246,6 +252,7 @@ async def api_paywall_download_file(
         headers = {"Content-Disposition": f'attachment; filename="{paywall.memo}"'}
         if version:
             file_config.url = file_config.url.format(version=version)
+        await validate_url(file_config.url)
         return StreamingResponse(
             content=_file_streamer(file_config.url, file_config.headers),
             headers=headers,
@@ -295,8 +302,11 @@ async def api_paywall_check_file(paywall_id: str, payment_hash: str | None = Non
 
 
 async def _file_streamer(url, headers):
-    with request.urlopen(request.Request(url=url, headers=headers)) as dl_file:
-        yield dl_file.read()
+    async with SafeHttpClient(follow_redirects=True) as client:
+        async with client.stream("GET", url, headers=headers) as response:
+            response.raise_for_status()
+            async for chunk in response.aiter_bytes(chunk_size=65536):
+                yield chunk
 
 
 async def _create_paywall_invoice(paywall: Paywall, amount: int):
