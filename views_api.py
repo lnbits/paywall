@@ -125,6 +125,11 @@ async def api_paywall_create_invoice(data: CreatePaywallInvoice, paywall_id: str
                 "currency 'sat'."
             ),
         )
+    if data.amount < paywall.amount:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=f"Minimum amount is {paywall.amount} {paywall.currency}.",
+        )
 
     try:
         invoice_data = CreateInvoice(

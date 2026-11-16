@@ -69,6 +69,8 @@ async def test_list_headers_only_visible_with_admin_key(
     listing.assert_awaited_once_with(
         ["wallet", "other-wallet"] if all_wallets else ["wallet"]
     )
+    assert stored.extras is not None
+    assert stored.extras.file_config is not None
     for row in response.json():
         assert row["extras"]["file_config"]["headers"] == (
             stored.extras.file_config.headers if admin else {}
@@ -77,6 +79,7 @@ async def test_list_headers_only_visible_with_admin_key(
         assert "private-canary" not in response.text
         assert "secret-canary" not in response.text
     # Redaction must never strip credentials needed by subsequent downloads.
-    assert all(
-        row.extras.file_config.headers["X-API-Key"] == "secret-canary" for row in rows
-    )
+    for row in rows:
+        assert row.extras is not None
+        assert row.extras.file_config is not None
+        assert row.extras.file_config.headers["X-API-Key"] == "secret-canary"

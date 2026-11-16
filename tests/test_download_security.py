@@ -88,7 +88,10 @@ async def test_paid_download_preserves_version_headers_and_streaming(monkeypatch
     response = await views.api_paywall_download_file(
         "wall", version="v2", payment_hash="paid"
     )
-    chunks = [chunk async for chunk in response.body_iterator]
+    chunks = []
+    async for chunk in response.body_iterator:
+        assert isinstance(chunk, bytes)
+        chunks.append(chunk)
     assert b"".join(chunks) == b"download" * 200000
     assert max(map(len, chunks)) <= 65536
     assert seen[0].url.path == "/v2/file"
